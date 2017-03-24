@@ -93,6 +93,10 @@ class SlackScreen:
         for (index, line,) in enumerate(self.slack_manager.loglines[self.logwin_topline:self.bottom]):
             color, msg = line
             self.logwin.attron(curses.color_pair(color))
+
+            if len(msg) > self.logwin_width:
+                msg = msg[0:self.logwin_width]
+
             self.logwin.addstr(index, 0, msg)
             self.logwin.clrtoeol()
             self.logwin.attroff(curses.color_pair(color))
