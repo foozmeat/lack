@@ -57,6 +57,9 @@ class SlackManager:
                     self._channel_id = group['id']
                     self.channel_topic = group['topic']['value']
 
+        if self._channel_id:
+            self._sc.api_call("channels.join", channel=self._channel_id)
+
     def _update_member_cache(self):
         if not self._connected:
             return
