@@ -84,7 +84,8 @@ class SlackManager:
         evts = self._sc.rtm_read()
 
         for evt in evts:
-            self.loglines.append((6, str(evt)))
+            if self._debug:
+                self.loglines.append((6, str(evt)))
 
             try:
 
