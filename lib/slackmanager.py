@@ -20,6 +20,9 @@ class SlackManager:
 
     def __init__(self):
         slack_token = os.environ["SLACK_API_TOKEN"]
+        self.username = os.getenv("SLACK_USERNAME", "Anonymous")
+        self.channel_name = os.environ["SLACK_CHANNEL"]
+        self._debug = bool(os.getenv("SLACK_DEBUG", False))
 
         self._sc = SlackClient(slack_token)
         self._connect()
@@ -38,13 +41,11 @@ class SlackManager:
         if not self._connected:
             return
 
-        channel_name = os.environ["SLACK_CHANNEL"]
-
         response = self._sc.api_call("channels.list", exclude_archived=1)
 
         for channel in response['channels']:
 
-            if channel['name'] == channel_name:
+            if channel['name'] == self.channel_name:
                 self._channel_id = channel['id']
                 self.channel_topic = channel['topic']['value']
 
@@ -53,12 +54,9 @@ class SlackManager:
             response = self._sc.api_call("groups.list", exclude_archived=1)
             for group in response['groups']:
 
-                if group['name'] == channel_name:
+                if group['name'] == self.channel_name:
                     self._channel_id = group['id']
                     self.channel_topic = group['topic']['value']
-
-        if self._channel_id:
-            self._sc.api_call("channels.join", channel=self._channel_id)
 
     def _update_member_cache(self):
         if not self._connected:
@@ -69,11 +67,22 @@ class SlackManager:
         for member in members_source:
             self._membercache[member['id']] = member['name']
 
+    def _add_logline(self, color, ts, name, text):
+        msg_body = "{} {} {}".format(ts, name, text)
+        self.loglines.append((color, msg_body))
+
+        return msg_body
+
     @asyncio.coroutine
     def send_message(self, msg):
         if not self._connected:
             return
-        self._sc.rtm_send_message(self._channel_id, msg)
+        response = self._sc.api_call("chat.postMessage",
+                                     channel=self._channel_id,
+                                     text=msg,
+                                     username=self.username,
+                                     )
+        self.loglines.append((6, str(response)))
 
     @asyncio.coroutine
     def update_messages(self):
@@ -89,18 +98,17 @@ class SlackManager:
 
             try:
 
-                if evt.get('type'):
+                if evt.get('type') and evt['type'] == 'message' and evt['channel'] == self._channel_id:
 
-                    if evt['type'] == 'message' and evt['channel'] == self._channel_id:
-                        msg_body = "{} {} {}".format(evt['ts'], self._membercache[evt['user']], evt['text'])
-                        # print(msg_body)
-                        self.loglines.append((3, msg_body))
+                    if evt.get('user'):
+                        # messages from other users
+                        self._add_logline(3, evt['ts'], self._membercache[evt['user']], evt['text'])
 
-                elif evt.get('ok') and evt['ok']:
+                    else:
+                        # messages from us
+                        self._add_logline(0, evt['ts'], evt['username'], evt['text'])
 
-                    msg_body = "{} {} {}".format(evt['ts'], 'me', evt['text'])
-                    self.loglines.append((0, msg_body))
-            except KeyError:
-                self.loglines.append((1, 'Key Error'))
+            except KeyError as e:
+                self.loglines.append((1, 'Key Error: {}'.format(e)))
 
         asyncio.async(self.update_messages())
