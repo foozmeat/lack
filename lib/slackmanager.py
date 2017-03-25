@@ -1,15 +1,14 @@
 import asyncio
 import os
-
 import sys
+
 from slackclient import SlackClient
-import time
+from sortedcontainers import SortedDict
 
 
 class SlackManager:
-
     # loglines = [(0, str(index)) for index, x in enumerate(range(100))]
-    loglines = []
+    loglines = SortedDict()
     channel_topic = ""
 
     _membercache = {}
@@ -25,7 +24,7 @@ class SlackManager:
         self._debug = bool(os.getenv("SLACK_DEBUG", False))
 
         if self._debug:
-            self._add_logline(6, 0, '', 'DEBUGGING ENABLED')
+            self._add_logline(6, '0.0', '', 'DEBUGGING ENABLED')
 
         self._sc = SlackClient(slack_token)
         self._connect()
@@ -36,6 +35,7 @@ class SlackManager:
             # print("Connected")
             self._update_member_cache()
             self._update_channel_cache()
+            self._fetch_history()
         else:
             print("Connection Failed, invalid token?")
             sys.exit(1)
@@ -70,20 +70,58 @@ class SlackManager:
         for member in members_source:
             self._membercache[member['id']] = member['name']
 
+    def _fetch_history(self):
+
+        method = "channels.history"
+
+        if self._channel_id[0] == 'G':
+            method = "groups.history"
+
+        response = self._sc.api_call(method,
+                                     channel=self._channel_id)
+
+        history = response['messages']
+
+        for evt in history:
+            self._process_event(evt, filter_channel=False)
+
     def _add_logline(self, color, ts, name, text):
-        msg_body = "{} {} {}".format(ts, name, text)
-        self.loglines.append((color, msg_body))
+
+        self.loglines[str(ts)] = (color, name, text)
+
+    def _process_event(self, evt, filter_channel=True):
+
+        if self._debug and evt.get('ts'):
+            self._add_logline(6, evt['ts'], 'DEBUG', str(evt))
+
+        try:
+
+            if evt.get('type') and evt['type'] == 'message':
+                if not filter_channel or (filter_channel and evt['channel'] == self._channel_id) :
+
+                    if evt.get('user'):
+                        # messages from other users
+                        self._add_logline(0, evt['ts'], self._membercache[evt['user']], evt['text'])
+
+                    else:
+                        # messages from us
+                        self._add_logline(7, evt['ts'], evt['username'], evt['text'])
+
+        except KeyError as e:
+            pass
+            # self.loglines.append((1, 'Key Error: {}'.format(e)))
 
     @asyncio.coroutine
     def send_message(self, msg):
+
         if not self._connected:
             return
-        response = self._sc.api_call("chat.postMessage",
-                                     channel=self._channel_id,
-                                     text=msg,
-                                     username=self.username,
-                                     )
-        self.loglines.append((6, str(response)))
+
+        self._sc.api_call("chat.postMessage",
+                          channel=self._channel_id,
+                          text=msg,
+                          username=self.username,
+                          )
 
     @asyncio.coroutine
     def update_messages(self):
@@ -94,23 +132,6 @@ class SlackManager:
         evts = self._sc.rtm_read()
 
         for evt in evts:
-
-            if self._debug:
-                self.loglines.append((6, str(evt)))
-
-            try:
-
-                if evt.get('type') and evt['type'] == 'message' and evt['channel'] == self._channel_id:
-
-                    if evt.get('user'):
-                        # messages from other users
-                        self._add_logline(3, evt['ts'], self._membercache[evt['user']], evt['text'])
-
-                    else:
-                        # messages from us
-                        self._add_logline(0, evt['ts'], evt['username'], evt['text'])
-
-            except KeyError as e:
-                self.loglines.append((1, 'Key Error: {}'.format(e)))
+            self._process_event(evt)
 
         asyncio.async(self.update_messages())

@@ -1,8 +1,10 @@
 import asyncio
 import curses
+import os
 from curses.textpad import Textbox
 import signal
-
+from datetime import datetime
+import pytz
 import math
 
 DOWN = 1
@@ -61,6 +63,8 @@ class SlackScreen:
 
         self.log_length = len(self.slack_manager.loglines)
 
+        self._tz = os.getenv('SLACK_TZ', 'UTC')
+
         signal.signal(signal.SIGWINCH, self.resize_handler)
 
     def resize_handler(self, signum, frame):
@@ -90,14 +94,26 @@ class SlackScreen:
         if self.bottom > self.log_length:
             self.bottom = self.log_length
 
-        for (index, line,) in enumerate(self.slack_manager.loglines[self.logwin_topline:self.bottom]):
-            color, msg = line
+        log_keys = self.slack_manager.loglines.iloc[self.logwin_topline:self.bottom]
+
+        tz = pytz.timezone(self._tz)
+
+        for (index, ts) in enumerate(log_keys):
+
+            posix_timestamp, _ = ts.split('.')
+            posix_timestamp = int(posix_timestamp)
+            utc_dt = datetime.fromtimestamp(posix_timestamp)
+            dt = utc_dt.astimezone(tz)
+            date = dt.strftime('%A %I:%M%p')
+
+            line = self.slack_manager.loglines[ts]
+            color, name, msg = line
             self.logwin.attron(curses.color_pair(color))
 
             if len(msg) > self.logwin_width:
                 msg = msg[0:self.logwin_width]
 
-            self.logwin.addstr(index, 0, msg)
+            self.logwin.addstr(index, 0, "{} {} {}".format(date, name, msg))
             self.logwin.clrtoeol()
             self.logwin.attroff(curses.color_pair(color))
 

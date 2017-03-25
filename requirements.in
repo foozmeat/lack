@@ -1,2 +1,4 @@
 slackclient
-
+sortedcontainers
+pytz
+pip-tools
