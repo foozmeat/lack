@@ -1,7 +1,7 @@
 lack
 =====
 
-A single-channel console slack client suitable for kiosks 
+A text-only slack client.
 
 Requirements
 ------------
