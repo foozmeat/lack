@@ -111,6 +111,9 @@ class SlackManager:
                         text = m['text'] + " (edited)"
                         self._add_logline(0, orig_ts, self._membercache[user], text)
 
+                    elif evt.get('deleted_ts'):
+                        del self.loglines[evt['deleted_ts']]
+
                     elif evt.get('user'):
                         # messages from other users
                         self._add_logline(0, evt['ts'], self._membercache[evt['user']], evt['text'])

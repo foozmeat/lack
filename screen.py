@@ -85,7 +85,7 @@ class SlackScreen:
     def _draw_log(self):
         self.log_length = len(self.slack_manager.loglines)
 
-        if self.log_length > self.last_log_length and self.log_length > self.logwin_height:
+        if self.log_length != self.last_log_length and self.log_length > self.logwin_height:
             self.logwin_topline = self.log_length - self.logwin_height
             self.bottom = self.log_length
 
