@@ -3,18 +3,7 @@ lack
 
 A text-only slack client.
 
-Requirements
-------------
-
-The following Python versions are supported:
-
-* Python 3.5+ (for asyncio)
-
-The following third-party libraries are used:
-
-* `slackclient`
-* `sortedcontainers`
-* `pytz`
+Requires Python 3.5+ for asyncio
 
 Installation
 ------------
