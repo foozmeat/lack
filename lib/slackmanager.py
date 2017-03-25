@@ -24,6 +24,9 @@ class SlackManager:
         self.channel_name = os.environ["SLACK_CHANNEL"]
         self._debug = bool(os.getenv("SLACK_DEBUG", False))
 
+        if self._debug:
+            self._add_logline(6, 0, '', 'DEBUGGING ENABLED')
+
         self._sc = SlackClient(slack_token)
         self._connect()
 
