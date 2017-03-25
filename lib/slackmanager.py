@@ -74,8 +74,6 @@ class SlackManager:
         msg_body = "{} {} {}".format(ts, name, text)
         self.loglines.append((color, msg_body))
 
-        return msg_body
-
     @asyncio.coroutine
     def send_message(self, msg):
         if not self._connected:
@@ -96,6 +94,7 @@ class SlackManager:
         evts = self._sc.rtm_read()
 
         for evt in evts:
+
             if self._debug:
                 self.loglines.append((6, str(evt)))
 
