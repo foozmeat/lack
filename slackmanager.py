@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+import logging
 
 from slackclient import SlackClient
 from sortedcontainers import SortedDict
@@ -24,7 +25,10 @@ class SlackManager:
         self._debug = bool(os.getenv("SLACK_DEBUG", False))
 
         if self._debug:
-            self._add_logline(6, '0.0', '', 'DEBUGGING ENABLED')
+
+            self.logger = logging.getLogger('debug')
+            self.logger.addHandler(logging.FileHandler('/tmp/lack_debug.log'))
+            self.logger.setLevel(logging.DEBUG)
 
         self._sc = SlackClient(slack_token)
         self._connect()
@@ -77,8 +81,7 @@ class SlackManager:
         if self._channel_id[0] == 'G':
             method = "groups.history"
 
-        response = self._sc.api_call(method,
-                                     channel=self._channel_id)
+        response = self._sc.api_call(method, channel=self._channel_id)
 
         history = response['messages']
 
@@ -91,15 +94,24 @@ class SlackManager:
 
     def _process_event(self, evt, filter_channel=True):
 
-        if self._debug and evt.get('ts'):
-            self._add_logline(6, evt['ts'], 'DEBUG', str(evt))
+        if self._debug:
+            # ts = float(evt['ts']) - 0.000001  # need to offset the ts or it gets overwritten
+            # self._add_logline(6, ts, 'DEBUG', str(evt))
+            self.logger.log(logging.DEBUG, str(evt))
 
         try:
 
             if evt.get('type') and evt['type'] == 'message':
-                if not filter_channel or (filter_channel and evt['channel'] == self._channel_id) :
+                if not filter_channel or (filter_channel and evt['channel'] == self._channel_id):
 
-                    if evt.get('user'):
+                    if evt.get('message'):  # message has been edited
+                        m = evt['message']
+                        orig_ts = m['ts']
+                        user = m['user']
+                        text = m['text'] + " (edited)"
+                        self._add_logline(0, orig_ts, self._membercache[user], text)
+
+                    elif evt.get('user'):
                         # messages from other users
                         self._add_logline(0, evt['ts'], self._membercache[evt['user']], evt['text'])
 
