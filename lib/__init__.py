@@ -8,7 +8,7 @@ __version__ = "1.0"
 
 def exit_handler(signal, frame):
     event_loop = asyncio.get_event_loop()
-    event_loop.run_until_complete(event_loop.shutdown_asyncgens())
+    event_loop.shutdown_asyncgens()
     event_loop.stop()
     # event_loop.close()
     curses.endwin()
