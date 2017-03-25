@@ -24,8 +24,12 @@ pip -r requirements.txt
 Usage
 -----
 
+lack requires a few environment variables be set.
+
     export SLACK_TOKEN='xoxb-111111111111-AAAAAAAAAAAAAAAAAAAAAAAA'
     export SLACK_CHANNEL='kiosk'
+    export SLACK_TZ=US/Pacific
+
     python -m lack.client
 
 
