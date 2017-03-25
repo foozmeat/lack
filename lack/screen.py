@@ -11,15 +11,15 @@ DOWN = 1
 UP = -1
 
 
-class SlackScreen:
+class LackScreen:
     rows = 0
     cols = 0
     last_log_length = 0
     log_length = 0
     msgpad = None
 
-    def __init__(self, window, slack_manager):
-        self.slack_manager = slack_manager
+    def __init__(self, window, lack_manager):
+        self.lack_manager = lack_manager
         self.window = window
         self.window.nodelay(1)
         self.window.attron(curses.A_BOLD)
@@ -61,7 +61,7 @@ class SlackScreen:
                           curses.ACS_HLINE,
                           self.cols - 2)
 
-        self.log_length = len(self.slack_manager.loglines)
+        self.log_length = len(self.lack_manager.loglines)
 
         self._tz = os.getenv('SLACK_TZ', 'UTC')
 
@@ -83,7 +83,7 @@ class SlackScreen:
         self.draw()
 
     def _draw_log(self):
-        self.log_length = len(self.slack_manager.loglines)
+        self.log_length = len(self.lack_manager.loglines)
 
         if self.log_length != self.last_log_length and self.log_length > self.logwin_height:
             self.logwin_topline = self.log_length - self.logwin_height
@@ -94,7 +94,7 @@ class SlackScreen:
         if self.bottom > self.log_length:
             self.bottom = self.log_length
 
-        log_keys = self.slack_manager.loglines.iloc[self.logwin_topline:self.bottom]
+        log_keys = self.lack_manager.loglines.iloc[self.logwin_topline:self.bottom]
 
         tz = pytz.timezone(self._tz)
 
@@ -106,7 +106,7 @@ class SlackScreen:
             dt = utc_dt.astimezone(tz)
             date = dt.strftime('%A %I:%M%p')
 
-            line = self.slack_manager.loglines[ts]
+            line = self.lack_manager.loglines[ts]
             color, name, msg = line
             self.logwin.attron(curses.color_pair(color))
 
@@ -141,13 +141,6 @@ class SlackScreen:
                               curses.ACS_CKBOARD,
                               scrollbar_length)
 
-            # self.window.addstr(19, 2, "s steps {0:<4}".format(str(scrollbar_steps)))
-            # self.window.addstr(21, 2, "s len {0:<4}".format(str(scrollbar_length)))
-            # self.window.addstr(24, 2, "overflow {0:<4}".format(str(overflow)))
-            # self.window.addstr(25, 2, "y float {0:<4}".format(str(scrollbar_y_float)))
-
-            # self.window.addstr(22, 2, "topline {0:<4}".format(str(self.logwin_topline)))
-            # self.window.addstr(23, 2, "height {0:<4}".format(str(self.logwin_height)))
             self.window.refresh()
 
     def _validator(self, ch):
@@ -201,7 +194,7 @@ class SlackScreen:
 
             self.msgpad = None
             if msg != '':
-                asyncio.async(self.slack_manager.send_message(msg))
+                asyncio.async(self.lack_manager.send_message(msg))
                 # self.slack_manager.loglines.append((0, msg))
 
             self.promptwin.erase()
@@ -211,7 +204,7 @@ class SlackScreen:
 
         self.window.attron(curses.color_pair(6))
 
-        bottom_line = "F1 Help"
+        bottom_line = "Exit: Control-C"
 
         self.window.addstr(self.rows - 1,
                            2,

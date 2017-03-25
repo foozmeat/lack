@@ -7,7 +7,7 @@ from slackclient import SlackClient
 from sortedcontainers import SortedDict
 
 
-class SlackManager:
+class LackManager:
     # loglines = [(0, str(index)) for index, x in enumerate(range(100))]
     loglines = SortedDict()
     channel_topic = ""

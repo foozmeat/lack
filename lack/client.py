@@ -5,8 +5,8 @@ import locale
 import signal
 import sys
 
-from screen import SlackScreen
-from slackmanager import SlackManager
+from .screen import LackScreen
+from .lackmanager import LackManager
 
 if sys.version_info < (3, 5):
     print("lack require Python 3.5+")
@@ -14,16 +14,13 @@ if sys.version_info < (3, 5):
 
 locale.setlocale(locale.LC_ALL, '')
 
-__version__ = "1.0"
-
 
 def exit_handler(signal, frame):
+    for task in asyncio.Task.all_tasks():
+        task.cancel()
+
     event_loop = asyncio.get_event_loop()
-    event_loop.shutdown_asyncgens()
     event_loop.stop()
-    # event_loop.close()
-    curses.endwin()
-    sys.exit(0)
 
 
 def exit_wrapper():
@@ -34,14 +31,14 @@ signal.signal(signal.SIGINT, exit_handler)
 
 def main(window):
 
-    slack_manager = SlackManager()
-    screen = SlackScreen(window, slack_manager)
+    lack_manager = LackManager()
+    screen = LackScreen(window, lack_manager)
 
     event_loop = asyncio.get_event_loop()
     # event_loop.set_debug(True)
     try:
         asyncio.async(screen.draw())
-        asyncio.async(slack_manager.update_messages())
+        asyncio.async(lack_manager.update_messages())
         event_loop.run_forever()
     except KeyboardInterrupt:
         pass
