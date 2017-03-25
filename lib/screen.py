@@ -191,6 +191,18 @@ class SlackScreen:
             self.promptwin.erase()
         curses.curs_set(0)
 
+    def _draw_bottom(self):
+
+        self.window.attron(curses.color_pair(6))
+
+        bottom_line = "F1 Help"
+
+        self.window.addstr(self.rows - 1,
+                           2,
+                           bottom_line)
+
+        self.window.attroff(curses.color_pair(6))
+
     @asyncio.coroutine
     def draw(self):
         yield from asyncio.sleep(0.025)  # 24 fps
@@ -198,6 +210,7 @@ class SlackScreen:
         self._draw_log()
         self._draw_scrollbar()
         self._prompt()
+        self._draw_bottom()
         self.last_log_length = self.log_length
         asyncio.async(self.draw())
 
