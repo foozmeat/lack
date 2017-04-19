@@ -1,9 +1,10 @@
 import asyncio
 import html
+import logging
 import os
 import re
 import sys
-import logging
+from random import randint
 
 from slackclient import SlackClient
 from sortedcontainers import SortedDict
@@ -28,7 +29,6 @@ class LackManager:
         self.username_re = re.compile('(U[A-Z0-9]{8})')
 
         if self._debug:
-
             self.logger = logging.getLogger('debug')
             self.logger.addHandler(logging.FileHandler('/tmp/lack_debug.log'))
             self.logger.setLevel(logging.DEBUG)
@@ -74,8 +74,19 @@ class LackManager:
 
         members_source = self._sc.api_call("users.list")['members']
 
+        color = 1
+
         for member in members_source:
-            self._membercache[member['id']] = member['name']
+            self._membercache[member['id']] = {
+                'n': member['name'],
+                'c': color,
+            }
+
+            color += 1
+            if color == 7:
+                color = 9
+            elif color == 15:
+                color = 1
 
     def _fetch_history(self):
 
@@ -98,7 +109,7 @@ class LackManager:
         result = re.findall(self.username_re, text)
 
         for r in result:
-            text = re.sub('<@' + r + '>', '@' + self._membercache[r], text)
+            text = re.sub('<@' + r + '>', '@' + self._membercache[r]['n'], text)
 
         self.loglines[str(ts)] = (color, name, text)
 
@@ -119,14 +130,20 @@ class LackManager:
                         orig_ts = m['ts']
                         user = m['user']
                         text = m['text'] + " (edited)"
-                        self._add_logline(0, orig_ts, self._membercache[user], text)
+                        self._add_logline(self._membercache[user]['c'],
+                                          orig_ts,
+                                          self._membercache[user]['n'],
+                                          text)
 
                     elif evt.get('deleted_ts'):
                         del self.loglines[evt['deleted_ts']]
 
                     elif evt.get('user'):
                         # messages from other users
-                        self._add_logline(0, evt['ts'], self._membercache[evt['user']], evt['text'])
+                        self._add_logline(self._membercache[evt['user']]['c'],
+                                          evt['ts'],
+                                          self._membercache[evt['user']]['n'],
+                                          evt['text'])
 
                     else:
                         # messages from us
