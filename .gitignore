@@ -2,3 +2,6 @@
 /.venv
 /run.sh
 *.pyc
+/lack.egg-info
+/dist
+/build
