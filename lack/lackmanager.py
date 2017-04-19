@@ -1,4 +1,5 @@
 import asyncio
+import html
 import os
 import sys
 import logging
@@ -89,6 +90,8 @@ class LackManager:
             self._process_event(evt, filter_channel=False)
 
     def _add_logline(self, color, ts, name, text):
+
+        text = html.unescape(text)
 
         self.loglines[str(ts)] = (color, name, text)
 
