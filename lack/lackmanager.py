@@ -1,6 +1,7 @@
 import asyncio
 import html
 import os
+import re
 import sys
 import logging
 
@@ -24,6 +25,7 @@ class LackManager:
         self.username = os.getenv("SLACK_USERNAME", "Anonymous")
         self.channel_name = os.environ["SLACK_CHANNEL"]
         self._debug = bool(os.getenv("SLACK_DEBUG", False))
+        self.username_re = re.compile('(U[A-Z0-9]{8})')
 
         if self._debug:
 
@@ -92,6 +94,11 @@ class LackManager:
     def _add_logline(self, color, ts, name, text):
 
         text = html.unescape(text)
+
+        result = re.findall(self.username_re, text)
+
+        for r in result:
+            text = re.sub('<@' + r + '>', '@' + self._membercache[r], text)
 
         self.loglines[str(ts)] = (color, name, text)
 
