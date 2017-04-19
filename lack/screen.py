@@ -113,7 +113,7 @@ class LackScreen:
             if len(msg) > self.logwin_width:
                 msg = msg[0:self.logwin_width]
 
-            self.logwin.addstr(index, 0, "{} {} {}".format(date, name, msg))
+            self.logwin.addstr(index, 0, "{} {}: {}".format(date, name, msg))
             self.logwin.clrtoeol()
             self.logwin.attroff(curses.color_pair(color))
 
