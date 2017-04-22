@@ -28,7 +28,7 @@ class LackScreen:
         self.window.nodelay(1)
         self.window.attron(curses.A_BOLD)
         self.window.timeout(0)
-        self.window_x, self.window_y = self.window.getbegyx()
+        self.window_y, self.window_x = self.window.getbegyx()
 
         self.rows, self.cols = self.window.getmaxyx()
         self.scrollbar_x = self.cols - 2
