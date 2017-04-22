@@ -2,6 +2,7 @@ import asyncio
 import curses
 import math
 import signal
+from curses import panel
 from curses.textpad import Textbox
 from datetime import datetime
 
@@ -24,7 +25,13 @@ class LackScreen:
     def __init__(self, window):
         self.lack_manager = LackManager()
 
-        self.window = window
+        if hasattr(window, 'window'):
+            # we were passed a panel
+            self.panel = window
+            self.window = window.window()
+        else:
+            self.window = window
+
         self.window.nodelay(1)
         self.window.attron(curses.A_BOLD)
         self.window.timeout(0)
@@ -69,6 +76,7 @@ class LackScreen:
         self.log_length = len(self.lack_manager.loglines)
 
         self._tz = os.getenv('SLACK_TZ', 'UTC')
+        self.hidden = False
 
         signal.signal(signal.SIGWINCH, self.resize_handler)
         asyncio.async(self.lack_manager.update_messages())
@@ -218,15 +226,29 @@ class LackScreen:
 
         self.window.attroff(curses.color_pair(6))
 
+    def hide(self):
+        self.hidden = True
+        self.panel.hide()
+        panel.update_panels()
+        curses.doupdate()
+
+    def show(self):
+        self.hidden = False
+        self.panel.show()
+        panel.update_panels()
+        curses.doupdate()
+
     @asyncio.coroutine
     def draw(self):
-        yield from asyncio.sleep(0.025)  # 24 fps
-        self.window.refresh()
-        self._draw_log()
-        self._draw_scrollbar()
-        self._prompt()
-        self._draw_bottom()
-        self.last_log_length = self.log_length
+
+        if not self.hidden:
+            yield from asyncio.sleep(0.025)  # 24 fps
+            self.window.refresh()
+            self._draw_log()
+            self._draw_scrollbar()
+            self._prompt()
+            self._draw_bottom()
+            self.last_log_length = self.log_length
         asyncio.async(self.draw())
 
 
