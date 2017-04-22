@@ -1,11 +1,14 @@
 import asyncio
 import curses
-import os
-from curses.textpad import Textbox
-import signal
-from datetime import datetime
-import pytz
 import math
+import signal
+from curses.textpad import Textbox
+from datetime import datetime
+
+import os
+import pytz
+
+from .lackmanager import LackManager
 
 DOWN = 1
 UP = -1
@@ -18,12 +21,14 @@ class LackScreen:
     log_length = 0
     msgpad = None
 
-    def __init__(self, window, lack_manager):
-        self.lack_manager = lack_manager
+    def __init__(self, window):
+        self.lack_manager = LackManager()
+
         self.window = window
         self.window.nodelay(1)
         self.window.attron(curses.A_BOLD)
         self.window.timeout(0)
+        self.window_x, self.window_y = self.window.getbegyx()
 
         self.rows, self.cols = self.window.getmaxyx()
         self.scrollbar_x = self.cols - 2
@@ -32,23 +37,23 @@ class LackScreen:
         for i in range(0, curses.COLORS):
             curses.init_pair(i, i, -1)
 
-        self.logwin_top = 1
+        self.logwin_top = self.window_y + 1
+        self.logwin_left = self.window_x + 2
+
         self.logwin_height = self.rows - 5
         self.logwin_topline = 0
         self.logwin_width = self.cols - 5
-        self.logwin = window.subwin(self.logwin_height,
+        self.logwin = curses.newwin(self.logwin_height,
                                     self.logwin_width,
                                     self.logwin_top,
-                                    2)
+                                    self.logwin_left)
         self.logwin.scrollok(True)
         self.logwin.idlok(1)
 
-        self.prompt_width = self.logwin_width
-        self.prompt_height = 2
-        self.promptwin = self.window.subwin(self.prompt_height,
-                                            self.prompt_width,
-                                            self.logwin_height + 2,
-                                            2)
+        self.promptwin = curses.newwin(2,
+                                       self.logwin_width,
+                                       self.window_y + self.logwin_height + 2,
+                                       self.logwin_left)
         self.promptwin.keypad(1)
         self.promptwin.timeout(0)
         self.promptwin.nodelay(1)
@@ -66,6 +71,7 @@ class LackScreen:
         self._tz = os.getenv('SLACK_TZ', 'UTC')
 
         signal.signal(signal.SIGWINCH, self.resize_handler)
+        asyncio.async(self.lack_manager.update_messages())
 
     def resize_handler(self, signum, frame):
         # if we don't trap the window resize we'll just crash
