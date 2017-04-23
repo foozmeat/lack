@@ -27,15 +27,14 @@ def exit_handler(*_: Any) -> None:
 def exit_wrapper() -> None:
     exit_handler(None, None)
 
+
 signal.signal(signal.SIGINT, exit_handler)
 
 
 def main() -> None:
     def _main(window: Any) -> None:
 
-        swin = curses.newwin(40, 80, 10, 10)
-
-        screen = LackScreen(swin)
+        screen = LackScreen(window)
 
         event_loop = asyncio.get_event_loop()
         # event_loop.set_debug(True)
