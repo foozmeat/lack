@@ -115,6 +115,8 @@ class LackScreen:
         ch = self._validator(ch)
 
         if ch == -1:
+            curses.curs_set(0)
+
             return
 
         dc_result = self.msgpad.do_command(ch)
