@@ -44,6 +44,7 @@ class LackScreen:
         self.logwin_width = self.cols - 4
 
         self.logwin = LogWindow(
+            self.window,
             self.logwin_height,
             self.logwin_width,
             self.logwin_top,
@@ -51,10 +52,10 @@ class LackScreen:
             self.lack_manager.loglines
         )
 
-        self.promptwin = curses.newwin(2,
-                                       self.logwin_width,
-                                       self.window_y + self.logwin_height + 2,
-                                       self.logwin_left)
+        self.promptwin = self.window.subwin(2,
+                                            self.logwin_width,
+                                            self.window_y + self.logwin_height + 2,
+                                            self.logwin_left)
         self.promptwin.keypad(1)
         self.promptwin.timeout(0)
         self.promptwin.nodelay(1)
