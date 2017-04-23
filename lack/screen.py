@@ -17,11 +17,13 @@ class LackScreen:
 
     def __init__(self, window):
         self.lack_manager = LackManager()
+        self.embedded = False
 
         if hasattr(window, 'window'):
             # we were passed a panel
             self.panel = window
             self.window = window.window()
+            self.embedded = True
         else:
             self.window = window
 
@@ -66,10 +68,9 @@ class LackScreen:
                           self.cols - 2)
 
         self._tz = os.getenv('SLACK_TZ', 'UTC')
-        self.hidden = False
+        self.visible = True
 
         signal.signal(signal.SIGWINCH, self.resize_handler)
-        asyncio.async(self.lack_manager.update_messages())
 
     def resize_handler(self, signum, frame):
         # if we don't trap the window resize we'll just crash
@@ -86,12 +87,15 @@ class LackScreen:
             return curses.KEY_BACKSPACE
 
         elif ch == curses.KEY_UP:
-            self.logwin.log_up_down(UP)
+            self.log_up_down(UP)
 
         elif ch == curses.KEY_DOWN:
-            self.logwin.log_up_down(DOWN)
+            self.log_up_down(DOWN)
 
         return ch
+
+    def log_up_down(self, direction):
+        self.logwin.log_up_down(direction)
 
     def _prompt(self):
         """
@@ -114,12 +118,7 @@ class LackScreen:
             return
 
         dc_result = self.msgpad.do_command(ch)
-        # self.state.loglines.append((0, str(dc)))
-
-        # if not dc:
-        #     return
-
-        self.promptwin.refresh()
+        self.promptwin.noutrefresh()
 
         if dc_result == 0:
             msg = self.msgpad.gather().strip()
@@ -134,6 +133,9 @@ class LackScreen:
 
     def _draw_bottom(self):
 
+        if self.embedded:
+            return
+
         self.window.attron(curses.color_pair(6))
 
         bottom_line = "Exit: Control-C"
@@ -145,27 +147,33 @@ class LackScreen:
         self.window.attroff(curses.color_pair(6))
 
     def hide(self):
-        self.hidden = True
+        self.visible = False
         self.panel.hide()
-        panel.update_panels()
-        curses.doupdate()
+        self._refresh()
 
     def show(self):
-        self.hidden = False
+        self.visible = True
         self.panel.show()
+        self._refresh()
+
+    def _refresh(self):
         panel.update_panels()
-        curses.doupdate()
+        self.window.noutrefresh()
 
     @asyncio.coroutine
     def draw(self):
 
-        if not self.hidden:
-            yield from asyncio.sleep(0.025)  # 24 fps
-            self.window.refresh()
+        yield from asyncio.sleep(0.025)  # 24 fps
+
+        if self.visible:
             self.logwin.draw()
             self._prompt()
             self._draw_bottom()
-        asyncio.async(self.draw())
+            self.window.noutrefresh()
+
+            if not self.embedded:
+                curses.doupdate()
+        asyncio.ensure_future(self.draw())
 
 
 class _Textbox(Textbox):
