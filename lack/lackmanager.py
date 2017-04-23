@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import sys
-from random import randint
 
 from slackclient import SlackClient
 from sortedcontainers import SortedDict
@@ -43,6 +42,7 @@ class LackManager:
             self._update_member_cache()
             self._update_channel_cache()
             self._fetch_history()
+            asyncio.ensure_future(self.update_messages())
         else:
             print("Connection Failed, invalid token?")
             sys.exit(1)
@@ -171,9 +171,10 @@ class LackManager:
         if not self._connected:
             return
 
+        yield from asyncio.sleep(0.025)  # 24 fps
         evts = self._sc.rtm_read()
 
         for evt in evts:
             self._process_event(evt)
 
-        asyncio.async(self.update_messages())
+        asyncio.ensure_future(self.update_messages())
