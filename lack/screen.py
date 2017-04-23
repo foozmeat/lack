@@ -159,28 +159,17 @@ class LackScreen:
 
         self.window.attroff(curses.color_pair(6))
 
-    def hide(self):
-        self.visible = False
-        self.panel.hide()
-        self._refresh()
-
-    def show(self):
-        self.visible = True
-
-        self.panel.show()
-        # self._draw_borders()
-        self._refresh()
-
     def toggle(self):
 
         if self.visible:
-            self.hide()
+            self.visible = False
+            # self.window.erase()
+
+            self.panel.hide()
         else:
-            self.show()
+            self.visible = True
+            self.panel.show()
 
-        self._refresh()
-
-    def _refresh(self):
         panel.update_panels()
         self.window.refresh()
 
