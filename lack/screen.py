@@ -61,18 +61,15 @@ class LackScreen:
         self.promptwin.nodelay(1)
         self.promptwin.idlok(1)
 
-        self.window.box(curses.ACS_VLINE, curses.ACS_HLINE)
-
-        self.window.hline(self.logwin_height + 1,
-                          1,
-                          curses.ACS_HLINE,
-                          self.cols - 2)
-
         self._tz = os.getenv('SLACK_TZ', 'UTC')
         self.visible = True
 
         if not self.embedded:
             signal.signal(signal.SIGWINCH, self.resize_handler)
+
+        self._draw_borders()
+        self._draw_bottom()
+        self.window.refresh()
 
         asyncio.ensure_future(self.draw())
 
@@ -95,6 +92,9 @@ class LackScreen:
 
         elif ch == curses.KEY_DOWN:
             self.log_up_down(DOWN)
+
+        elif ch == curses.KEY_F1:
+            self.toggle()
 
         return ch
 
@@ -124,7 +124,7 @@ class LackScreen:
             return
 
         dc_result = self.msgpad.do_command(ch)
-        self.promptwin.noutrefresh()
+        # self.promptwin.noutrefresh()
 
         if dc_result == 0:
             msg = self.msgpad.gather().strip()
@@ -136,6 +136,13 @@ class LackScreen:
 
             self.promptwin.erase()
         curses.curs_set(0)
+
+    def _draw_borders(self):
+        self.window.box(curses.ACS_VLINE, curses.ACS_HLINE)
+        self.window.hline(self.logwin_height + 1,
+                          1,
+                          curses.ACS_HLINE,
+                          self.cols - 2)
 
     def _draw_bottom(self):
 
@@ -159,12 +166,23 @@ class LackScreen:
 
     def show(self):
         self.visible = True
+
         self.panel.show()
+        # self._draw_borders()
+        self._refresh()
+
+    def toggle(self):
+
+        if self.visible:
+            self.hide()
+        else:
+            self.show()
+
         self._refresh()
 
     def _refresh(self):
         panel.update_panels()
-        self.window.noutrefresh()
+        self.window.refresh()
 
     @asyncio.coroutine
     def draw(self):
@@ -172,11 +190,11 @@ class LackScreen:
         yield from asyncio.sleep(0.025)  # 24 fps
 
         if self.visible:
+
             self.logwin.draw()
             self._prompt()
-            self._draw_bottom()
-            self.window.noutrefresh()
 
+            self.window.refresh()
             if not self.embedded:
                 curses.doupdate()
         asyncio.ensure_future(self.draw())
