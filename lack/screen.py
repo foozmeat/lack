@@ -70,7 +70,10 @@ class LackScreen:
         self._tz = os.getenv('SLACK_TZ', 'UTC')
         self.visible = True
 
-        signal.signal(signal.SIGWINCH, self.resize_handler)
+        if not self.embedded:
+            signal.signal(signal.SIGWINCH, self.resize_handler)
+
+        asyncio.ensure_future(self.draw())
 
     def resize_handler(self, signum, frame):
         # if we don't trap the window resize we'll just crash

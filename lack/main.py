@@ -34,12 +34,12 @@ signal.signal(signal.SIGINT, exit_handler)
 def main() -> None:
     def _main(window: Any) -> None:
 
+        event_loop = asyncio.get_event_loop()
+
         screen = LackScreen(window)
 
-        event_loop = asyncio.get_event_loop()
         # event_loop.set_debug(True)
         try:
-            asyncio.async(screen.draw())
             event_loop.run_forever()
         except KeyboardInterrupt:
             pass
