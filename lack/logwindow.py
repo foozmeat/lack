@@ -38,13 +38,12 @@ class LogWindow:
         self.rows, self.cols = self.window.getmaxyx()
 
         self.redraw()
-        # self.window.scrollok(True)
         self.window.idlok(1)
 
         self.scrollbar_x = self.width - 1
         self.line_length = self.width - 2
         self._tz = os.getenv('SLACK_TZ', 'UTC')
-        # self.window.refresh()
+        self.window.refresh()
 
     def log_up_down(self, increment):
         scroll_max = self.log_length - self.height
@@ -60,6 +59,7 @@ class LogWindow:
     def redraw(self):
 
         self.window.bkgd(ord('X'), curses.color_pair(curses.COLOR_GREEN))
+        self.window.refresh()
 
     def draw(self):
         self.log_length = len(self.datasource)
