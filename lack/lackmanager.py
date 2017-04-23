@@ -33,8 +33,9 @@ class LackManager:
             self.logger.setLevel(logging.DEBUG)
 
         self._sc = SlackClient(slack_token)
-        self._connect()
+        asyncio.ensure_future(self._connect())
 
+    @asyncio.coroutine
     def _connect(self):
         if self._sc.rtm_connect():
             self._connected = True
