@@ -76,7 +76,7 @@ class LogWindow:
             posix_timestamp = int(posix_timestamp)
             utc_dt = datetime.fromtimestamp(posix_timestamp)
             dt = utc_dt.astimezone(tz)
-            date = dt.strftime('%A %I:%M%p')
+            date = dt.strftime('%a %I:%M%p')
 
             line = self.datasource[ts]
             color, name, msg = line
