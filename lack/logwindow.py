@@ -3,6 +3,7 @@ import math
 from datetime import datetime
 from typing import Any
 
+import asyncio
 import os
 import pytz
 from sortedcontainers import SortedDict
@@ -45,6 +46,14 @@ class LogWindow:
         self._tz = os.getenv('SLACK_TZ', 'UTC')
         self.window.refresh()
 
+    @asyncio.coroutine
+    def demo_log(self):
+        yield from asyncio.sleep(0.5)
+        ts = str(datetime.now().timestamp())
+        self.datasource[ts] = (2, 'testing', 'testing')
+
+        asyncio.ensure_future(self.demo_log())
+
     def log_up_down(self, increment):
         scroll_max = self.log_length - self.height
 
@@ -58,7 +67,7 @@ class LogWindow:
 
     def redraw(self):
 
-        self.window.bkgd(ord('X'), curses.color_pair(curses.COLOR_GREEN))
+        # self.window.bkgd(ord('X'), curses.color_pair(curses.COLOR_GREEN))
         self.window.refresh()
 
     def draw(self):
