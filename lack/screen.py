@@ -17,12 +17,15 @@ class LackScreen:
 
     def __init__(self, window):
         self.embedded = False
+        self.visible = True
 
         if hasattr(window, 'window'):
             # we were passed a panel
             self.panel = window
             self.window = window.window()
             self.embedded = True
+            self.visible = False
+
         else:
             self.window = window
 
@@ -60,14 +63,11 @@ class LackScreen:
         self.promptwin.idlok(1)
 
         self._tz = os.getenv('SLACK_TZ', 'UTC')
-        self.visible = True
 
         if not self.embedded:
             signal.signal(signal.SIGWINCH, self.resize_handler)
             asyncio.ensure_future(self.async_draw())
 
-        self._draw_borders()
-        self._draw_bottom()
         self.window.noutrefresh()
 
     def resize_handler(self, signum, frame):
@@ -165,6 +165,8 @@ class LackScreen:
             self.visible = True
             self.panel.show()
             self.window.erase()
+            self._draw_borders()
+            self._draw_bottom()
 
         panel.update_panels()
 
