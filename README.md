@@ -19,7 +19,7 @@ lack requires a few environment variables be set.
     export SLACK_CHANNEL='kiosk'
     export SLACK_TZ=US/Pacific
 
-    python -m lack.client
+    python -m lack
 
 
 Notes

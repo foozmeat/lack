@@ -157,8 +157,7 @@ class LackScreen:
 
     def show(self):
         self.visible = True
-        self.window.erase()
-        self.promptwin.erase()
+        self.window.clear()
         self.panel.top()
         self.window.noutrefresh()
 
