@@ -66,12 +66,11 @@ class LackScreen:
 
         if not self.embedded:
             signal.signal(signal.SIGWINCH, self.resize_handler)
+            asyncio.ensure_future(self.async_draw())
 
         self._draw_borders()
         self._draw_bottom()
         self.window.refresh()
-
-        asyncio.ensure_future(self.draw())
 
     def resize_handler(self, signum, frame):
         # if we don't trap the window resize we'll just crash
@@ -163,30 +162,36 @@ class LackScreen:
 
         if self.visible:
             self.visible = False
-            # self.window.erase()
+            # self.msgpad = None
+            self.window.clear()
 
             self.panel.hide()
         else:
             self.visible = True
             self.panel.show()
+            self.window.erase()
+            self.window.refresh()
+            # self.window.clear()
 
         panel.update_panels()
         self.window.refresh()
 
     @asyncio.coroutine
-    def draw(self):
-
+    def async_draw(self):
         yield from asyncio.sleep(0.025)  # 24 fps
+        self.draw()
+        asyncio.ensure_future(self.async_draw())
 
+    def draw(self):
         if self.visible:
-
+            # self.window.erase()
+            self._draw_borders()
             self.logwin.draw()
             self._prompt()
 
             self.window.refresh()
             if not self.embedded:
                 curses.doupdate()
-        asyncio.ensure_future(self.draw())
 
 
 class _Textbox(Textbox):
