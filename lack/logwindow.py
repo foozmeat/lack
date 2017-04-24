@@ -45,7 +45,7 @@ class LogWindow:
     def demo_log(self):
         yield from asyncio.sleep(0.5)
         ts = str(datetime.now().timestamp())
-        self.datasource[ts] = (2, 'testing', 'testing')
+        self.datasource[ts] = (2, 'testing')
 
         asyncio.ensure_future(self.demo_log())
 
