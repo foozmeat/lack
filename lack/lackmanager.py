@@ -1,7 +1,11 @@
 import asyncio
 import html
 import logging
+from datetime import datetime
+from textwrap import TextWrapper
+
 import os
+import pytz
 import re
 import sys
 
@@ -20,12 +24,13 @@ class LackManager:
     _connected = False
     _channel_id = None
 
-    def __init__(self):
+    def __init__(self, output_width):
         slack_token = os.environ["SLACK_API_TOKEN"]
         self.username = os.getenv("SLACK_USERNAME", "Anonymous")
         self.channel_name = os.environ["SLACK_CHANNEL"]
         self._debug = bool(os.getenv("SLACK_DEBUG", False))
         self.username_re = re.compile('(U[A-Z0-9]{8})')
+        self.output_width = output_width
 
         if self._debug:
             self.logger = logging.getLogger('debug')
@@ -33,6 +38,8 @@ class LackManager:
             self.logger.setLevel(logging.DEBUG)
 
         self._sc = SlackClient(slack_token)
+        self._tz = os.getenv('SLACK_TZ', 'UTC')
+
         asyncio.ensure_future(self._connect())
 
     @asyncio.coroutine
@@ -106,13 +113,36 @@ class LackManager:
     def _add_logline(self, color, ts, name, text):
 
         text = html.unescape(text)
-
         result = re.findall(self.username_re, text)
 
         for r in result:
             text = re.sub('<@' + r + '>', '@' + self._membercache[r]['n'], text)
 
-        self.loglines[str(ts)] = (color, name, text)
+        tz = pytz.timezone(self._tz)
+        posix_timestamp, _ = ts.split('.')
+        posix_timestamp = int(posix_timestamp)
+        utc_dt = datetime.fromtimestamp(posix_timestamp)
+        dt = utc_dt.astimezone(tz)
+        date = dt.strftime('%a %I:%M%p')
+
+        prefix = f"{date} {name}: "
+
+        paragraphs = f"{prefix}{text}".split("\n")
+        leading_pad = " " * len(prefix)
+
+        for p_i, p in enumerate(paragraphs):
+
+            wrapper = TextWrapper(subsequent_indent=leading_pad,
+                                  width=self.output_width)
+
+            if p_i > 0:
+                p = leading_pad + p
+
+            lines = wrapper.wrap(p)
+
+            for l in lines:
+                self.loglines[str(ts)] = (color, f"{l}")
+                ts = float(ts) + 0.000001
 
     def _process_event(self, evt, filter_channel=True):
 
@@ -172,7 +202,7 @@ class LackManager:
         if not self._connected:
             return
 
-        yield from asyncio.sleep(0.025)  # 24 fps
+        yield from asyncio.sleep(1)
         evts = self._sc.rtm_read()
 
         for evt in evts:

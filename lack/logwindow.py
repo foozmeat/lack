@@ -1,11 +1,9 @@
+import asyncio
 import curses
 import math
 from datetime import datetime
 from typing import Any
 
-import asyncio
-import os
-import pytz
 from sortedcontainers import SortedDict
 
 DOWN = 1
@@ -35,12 +33,13 @@ class LogWindow:
                                          self.width,
                                          self.top,
                                          self.left)
+        self.window.scrollok(1) # enable scrolling
+
         self.window_y, self.window_x = self.window.getbegyx()
         self.rows, self.cols = self.window.getmaxyx()
 
         self.scrollbar_x = self.width - 1
         self.line_length = self.width - 2
-        self._tz = os.getenv('SLACK_TZ', 'UTC')
 
     @asyncio.coroutine
     def demo_log(self):
@@ -75,26 +74,15 @@ class LogWindow:
 
         log_keys = self.datasource.iloc[self.topline:bottom]
 
-        tz = pytz.timezone(self._tz)
-
         for (index, ts) in enumerate(log_keys):
 
-            posix_timestamp, _ = ts.split('.')
-            posix_timestamp = int(posix_timestamp)
-            utc_dt = datetime.fromtimestamp(posix_timestamp)
-            dt = utc_dt.astimezone(tz)
-            date = dt.strftime('%a %I:%M%p')
-
-            line = self.datasource[ts]
-            color, name, msg = line
+            color, msg = self.datasource[ts]
             self.window.attron(curses.color_pair(color))
 
-            line = f"{date} {name}: {msg}"
+            if len(msg) > self.line_length:
+                msg = msg[0:self.line_length]
 
-            if len(line) > self.line_length:
-                line = line[0:self.line_length]
-
-            self.window.addstr(index, 0, line)
+            self.window.addstr(index, 0, msg)
             self.window.clrtoeol()
             self.window.attroff(curses.color_pair(color))
 

@@ -16,7 +16,6 @@ class LackScreen:
     msgpad = None
 
     def __init__(self, window):
-        self.lack_manager = LackManager()
         self.embedded = False
 
         if hasattr(window, 'window'):
@@ -39,6 +38,8 @@ class LackScreen:
         self.logwin_left = self.window_x + 2
         self.logwin_height = self.rows - 5
         self.logwin_width = self.cols - 4
+
+        self.lack_manager = LackManager(self.logwin_width)
 
         self.logwin = LogWindow(
             self.window,
