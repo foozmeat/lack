@@ -15,7 +15,7 @@ class LackScreen:
     cols = 0
     msgpad = None
 
-    def __init__(self, window):
+    def __init__(self, window, parent=None):
         self.embedded = False
         self.visible = True
 
@@ -23,6 +23,7 @@ class LackScreen:
             # we were passed a panel
             self.panel = window
             self.window = window.window()
+            self.parent = parent
             self.embedded = True
             self.hide()
 
@@ -152,24 +153,30 @@ class LackScreen:
         self.window.attroff(curses.color_pair(6))
 
     def hide(self):
-        self.visible = False
-        self.panel.bottom()
+        if self.embedded:
+            self.visible = False
+            self.panel.bottom()
+            panel.update_panels()
+            self.parent.lack_did_hide()
 
     def show(self):
-        self.visible = True
-        self.window.clear()
-        self.panel.top()
-        self.window.noutrefresh()
+        if self.embedded:
+            self.visible = True
+            self.window.clear()
+            self.panel.top()
+            self.window.noutrefresh()
+            panel.update_panels()
+            self.parent.lack_did_show()
 
-    def toggle(self):
-        if self.visible:
-            self.hide()
-
-        else:
-            self.show()
-
-        panel.update_panels()
-        # curses.doupdate()
+    # def toggle(self):
+    #     if self.visible:
+    #         self.hide()
+    #
+    #     else:
+    #         self.show()
+    #
+    #     panel.update_panels()
+    #     # curses.doupdate()
 
     @asyncio.coroutine
     def async_draw(self):
