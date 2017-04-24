@@ -38,13 +38,9 @@ class LogWindow:
         self.window_y, self.window_x = self.window.getbegyx()
         self.rows, self.cols = self.window.getmaxyx()
 
-        self.redraw()
-        self.window.idlok(1)
-
         self.scrollbar_x = self.width - 1
         self.line_length = self.width - 2
         self._tz = os.getenv('SLACK_TZ', 'UTC')
-        self.window.refresh()
 
     @asyncio.coroutine
     def demo_log(self):
@@ -64,11 +60,6 @@ class LogWindow:
             self.topline += 1
 
         self.draw()
-
-    def redraw(self):
-
-        # self.window.bkgd(ord('X'), curses.color_pair(curses.COLOR_GREEN))
-        self.window.refresh()
 
     def draw(self):
         self.log_length = len(self.datasource)
@@ -111,7 +102,7 @@ class LogWindow:
 
         self._draw_scrollbar()
         # self.window.addstr(1, 5, f"{self.height} {self.width} {self.top} {self.left}")
-        self.window.refresh()
+        self.window.noutrefresh()
 
     def _draw_scrollbar(self):
         self.window.vline(1,

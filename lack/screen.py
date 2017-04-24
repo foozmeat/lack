@@ -27,9 +27,6 @@ class LackScreen:
         else:
             self.window = window
 
-        self.window.nodelay(1)
-        self.window.attron(curses.A_BOLD)
-        self.window.timeout(0)
         self.window_y, self.window_x = self.window.getbegyx()
 
         self.rows, self.cols = self.window.getmaxyx()
@@ -70,7 +67,7 @@ class LackScreen:
 
         self._draw_borders()
         self._draw_bottom()
-        self.window.refresh()
+        self.window.noutrefresh()
 
     def resize_handler(self, signum, frame):
         # if we don't trap the window resize we'll just crash
@@ -93,7 +90,8 @@ class LackScreen:
             self.log_up_down(DOWN)
 
         elif ch == curses.KEY_F1:
-            self.toggle()
+            if self.embedded:
+                self.toggle()
 
         return ch
 
@@ -106,24 +104,22 @@ class LackScreen:
         nicely with asyncio.
         """
 
-        curses.curs_set(1)
         if not self.msgpad:
             self.msgpad = _Textbox(self.promptwin, insert_mode=True)
-            self.msgpad.stripspaces = True
 
-        (y, x) = self.promptwin.getyx()
-        self.promptwin.move(y, x)
-
+        curses.curs_set(1)
         ch = self.promptwin.getch()
         ch = self._validator(ch)
 
-        if ch == -1:
-            curses.curs_set(0)
+        (y, x) = self.msgpad.win.getyx()
+        self.msgpad.win.move(y, x)
 
+        self.promptwin.noutrefresh()
+
+        if ch == -1:
             return
 
         dc_result = self.msgpad.do_command(ch)
-        # self.promptwin.noutrefresh()
 
         if dc_result == 0:
             msg = self.msgpad.gather().strip()
@@ -131,10 +127,8 @@ class LackScreen:
             self.msgpad = None
             if msg != '':
                 asyncio.async(self.lack_manager.send_message(msg))
-                # self.slack_manager.loglines.append((0, msg))
 
             self.promptwin.erase()
-        curses.curs_set(0)
 
     def _draw_borders(self):
         self.window.box(curses.ACS_VLINE, curses.ACS_HLINE)
@@ -170,11 +164,8 @@ class LackScreen:
             self.visible = True
             self.panel.show()
             self.window.erase()
-            self.window.refresh()
-            # self.window.clear()
 
         panel.update_panels()
-        self.window.refresh()
 
     @asyncio.coroutine
     def async_draw(self):
@@ -184,14 +175,11 @@ class LackScreen:
 
     def draw(self):
         if self.visible:
-            # self.window.erase()
             self._draw_borders()
             self.logwin.draw()
             self._prompt()
 
-            self.window.refresh()
-            if not self.embedded:
-                curses.doupdate()
+            curses.doupdate()
 
 
 class _Textbox(Textbox):
