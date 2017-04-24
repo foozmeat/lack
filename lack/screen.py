@@ -24,7 +24,7 @@ class LackScreen:
             self.panel = window
             self.window = window.window()
             self.embedded = True
-            self.visible = False
+            self.hide()
 
         else:
             self.window = window
@@ -92,7 +92,7 @@ class LackScreen:
 
         elif ch == curses.KEY_F1:
             if self.embedded:
-                self.toggle()
+                self.hide()
 
         return ch
 
@@ -111,9 +111,6 @@ class LackScreen:
         curses.curs_set(1)
         ch = self.promptwin.getch()
         ch = self._validator(ch)
-
-        (y, x) = self.msgpad.win.getyx()
-        self.msgpad.win.move(y, x)
 
         self.promptwin.noutrefresh()
 
@@ -137,6 +134,7 @@ class LackScreen:
                           1,
                           curses.ACS_HLINE,
                           self.cols - 2)
+        self.window.noutrefresh()
 
     def _draw_bottom(self):
 
@@ -153,22 +151,26 @@ class LackScreen:
 
         self.window.attroff(curses.color_pair(6))
 
+    def hide(self):
+        self.visible = False
+        self.panel.bottom()
+
+    def show(self):
+        self.visible = True
+        self.window.erase()
+        self.promptwin.erase()
+        self.panel.top()
+        self.window.noutrefresh()
+
     def toggle(self):
-
         if self.visible:
-            self.visible = False
-            # self.msgpad = None
-            self.window.clear()
+            self.hide()
 
-            self.panel.hide()
         else:
-            self.visible = True
-            self.panel.show()
-            self.window.erase()
-            self._draw_borders()
-            self._draw_bottom()
+            self.show()
 
         panel.update_panels()
+        # curses.doupdate()
 
     @asyncio.coroutine
     def async_draw(self):
@@ -182,6 +184,7 @@ class LackScreen:
             self.logwin.draw()
             self._prompt()
 
+        if not self.embedded:
             curses.doupdate()
 
 
