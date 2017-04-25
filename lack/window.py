@@ -28,6 +28,7 @@ class Window:
             for i in range(0, curses.COLORS):
                 curses.init_pair(i, i, -1)
 
+            self.window.attron(curses.A_BOLD)
             self.window.bkgdset(ord(' '), curses.color_pair(fg))
 
         self.boxed = False

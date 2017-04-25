@@ -16,8 +16,6 @@ class LackScreen(Window):
     def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE):
         super(LackScreen, self).__init__(height, width, top, left, fg)
 
-        self.embedded = False
-
         curses.use_default_colors()
         for i in range(0, curses.COLORS):
             curses.init_pair(i, i, -1)
@@ -44,8 +42,7 @@ class LackScreen(Window):
 
         self._tz = os.getenv('SLACK_TZ', 'UTC')
 
-        if not self.embedded:
-            asyncio.ensure_future(self.async_draw())
+        asyncio.ensure_future(self.async_draw())
 
         self.window.border(0)
         self.window.hline(self.logwin_height + 1,
@@ -63,40 +60,23 @@ class LackScreen(Window):
 
         return ch
 
-    def _draw_bottom(self):
-
-        if self.embedded:
-            return
-
-        self.window.attron(curses.color_pair(6))
-
-        bottom_line = "Exit: Control-C"
-
-        self.window.addstr(self.rows - 1,
-                           2,
-                           bottom_line)
-
-        self.window.attroff(curses.color_pair(6))
-        self.window.noutrefresh()
-
     @asyncio.coroutine
     def async_draw(self):
         yield from asyncio.sleep(0.025)  # 24 fps
         self.draw()
-        asyncio.ensure_future(self.async_draw())
+
+        if not self.panel:
+            asyncio.ensure_future(self.async_draw())
 
     def draw(self):
         if self.visible():
             self.logwin.draw()
-
-            if not self.embedded:
-                self._draw_bottom()
 
             msg = self.promptwin.textbox_prompt()
             self.promptwin.draw()
             if msg:
                 asyncio.async(self.lack_manager.send_message(msg))
 
-        if not self.embedded:
+        if not self.panel:
             curses.doupdate()
 
