@@ -2,12 +2,12 @@ import asyncio
 import curses
 import signal
 from curses import panel
-from curses.textpad import Textbox
 
 import os
 
 from .lackmanager import LackManager
-from .logwindow import UP, DOWN, LogWindow
+from .logwindow import LogWindow
+from .window import PromptWindow
 
 
 class LackScreen:
@@ -18,6 +18,10 @@ class LackScreen:
     def __init__(self, window, parent=None):
         self.embedded = False
         self.visible = True
+
+        curses.use_default_colors()
+        for i in range(0, curses.COLORS):
+            curses.init_pair(i, i, -1)
 
         if hasattr(window, 'window'):
             # we were passed a panel
@@ -34,10 +38,6 @@ class LackScreen:
 
         self.rows, self.cols = self.window.getmaxyx()
 
-        curses.use_default_colors()
-        for i in range(0, curses.COLORS):
-            curses.init_pair(i, i, -1)
-
         self.logwin_top = self.window_y + 1
         self.logwin_left = self.window_x + 2
         self.logwin_height = self.rows - 5
@@ -45,23 +45,16 @@ class LackScreen:
 
         self.lack_manager = LackManager(self.logwin_width)
 
-        self.logwin = LogWindow(
-            self.window,
-            self.logwin_height,
-            self.logwin_width,
-            self.logwin_top,
-            self.logwin_left,
-            self.lack_manager.loglines
-        )
+        self.logwin = LogWindow(self.logwin_height,
+                                self.logwin_width,
+                                self.logwin_top,
+                                self.logwin_left,
+                                self.lack_manager.loglines)
 
-        self.promptwin = self.window.subwin(2,
-                                            self.logwin_width,
-                                            self.window_y + self.logwin_height + 2,
-                                            self.logwin_left)
-        self.promptwin.keypad(1)
-        self.promptwin.timeout(0)
-        self.promptwin.nodelay(1)
-        self.promptwin.idlok(1)
+        self.promptwin = PromptWindow(2,
+                                      self.logwin_width,
+                                      self.window_y + self.logwin_height + 2,
+                                      self.logwin_left)
 
         self._tz = os.getenv('SLACK_TZ', 'UTC')
 
@@ -69,73 +62,26 @@ class LackScreen:
             signal.signal(signal.SIGWINCH, self.resize_handler)
             asyncio.ensure_future(self.async_draw())
 
+        self.window.border(0)
+        self.window.hline(self.logwin_height + 1,
+                          1,
+                          curses.ACS_HLINE,
+                          self.cols - 2)
         self.window.noutrefresh()
 
     def resize_handler(self, signum, frame):
         # if we don't trap the window resize we'll just crash
         pass
 
-    def _validator(self, ch):
+    def key_validation(self, ch):
 
-        """
-        This is our chance to modify incoming keystrokes before they're acted on
-        in do_command
-        """
+        ch = self.logwin.key_validation(ch)
 
-        if ch == 127:
-            return curses.KEY_BACKSPACE
-
-        elif ch == curses.KEY_UP:
-            self.log_up_down(UP)
-
-        elif ch == curses.KEY_DOWN:
-            self.log_up_down(DOWN)
-
-        elif ch == curses.KEY_F1:
+        if ch == curses.KEY_F1:
             if self.embedded:
                 self.hide()
 
         return ch
-
-    def log_up_down(self, direction):
-        self.logwin.log_up_down(direction)
-
-    def _prompt(self):
-        """
-        Don't use the standard curses textbox edit function since it won't play
-        nicely with asyncio.
-        """
-
-        if not self.msgpad:
-            self.msgpad = _Textbox(self.promptwin, insert_mode=True)
-
-        curses.curs_set(1)
-        ch = self.promptwin.getch()
-        ch = self._validator(ch)
-
-        self.promptwin.noutrefresh()
-
-        if ch == -1:
-            return
-
-        dc_result = self.msgpad.do_command(ch)
-
-        if dc_result == 0:
-            msg = self.msgpad.gather().strip()
-
-            self.msgpad = None
-            if msg != '':
-                asyncio.async(self.lack_manager.send_message(msg))
-
-            self.promptwin.erase()
-
-    def _draw_borders(self):
-        self.window.box(curses.ACS_VLINE, curses.ACS_HLINE)
-        self.window.hline(self.logwin_height + 1,
-                          1,
-                          curses.ACS_HLINE,
-                          self.cols - 2)
-        self.window.noutrefresh()
 
     def _draw_bottom(self):
 
@@ -151,6 +97,7 @@ class LackScreen:
                            bottom_line)
 
         self.window.attroff(curses.color_pair(6))
+        self.window.noutrefresh()
 
     def hide(self):
         if self.embedded:
@@ -186,31 +133,16 @@ class LackScreen:
 
     def draw(self):
         if self.visible:
-            self._draw_borders()
             self.logwin.draw()
-            self._prompt()
+
+            if not self.embedded:
+                self._draw_bottom()
+
+            msg = self.promptwin.textbox_prompt(key_handler=self.key_validation)
+            self.promptwin.draw()
+            if msg:
+                asyncio.async(self.lack_manager.send_message(msg))
 
         if not self.embedded:
             curses.doupdate()
 
-
-class _Textbox(Textbox):
-    """
-    Change the default textbox behavior of enter, up, and down.
-    """
-
-    def __init__(*args, **kwargs):
-        Textbox.__init__(*args, **kwargs)
-
-    def do_command(self, ch):
-        if ch == 10:
-            return 0
-
-        elif ch == curses.KEY_UP:
-            return 1
-
-        elif ch == curses.KEY_DOWN:
-            return 1
-
-        else:
-            return Textbox.do_command(self, ch)

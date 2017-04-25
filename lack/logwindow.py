@@ -2,7 +2,7 @@ import asyncio
 import curses
 import math
 from datetime import datetime
-from typing import Any
+from .window import Window
 
 from sortedcontainers import SortedDict
 
@@ -10,33 +10,20 @@ DOWN = 1
 UP = -1
 
 
-class LogWindow:
+class LogWindow(Window):
     def __init__(self,
-                 parent: Any,
                  height: int,
                  width: int,
                  top: int,
                  left: int,
                  datasource: SortedDict) -> None:
 
-        self.parent = parent
-        self.height = height
-        self.width = width
-        self.top = top
-        self.left = left
+        super(LogWindow, self).__init__(height, width, top, left)
+
         self.datasource = datasource
         self.topline = 0
         self.last_log_length = 0
         self.log_length = 0
-
-        self.window = self.parent.subwin(self.height,
-                                         self.width,
-                                         self.top,
-                                         self.left)
-        self.window.scrollok(1) # enable scrolling
-
-        self.window_y, self.window_x = self.window.getbegyx()
-        self.rows, self.cols = self.window.getmaxyx()
 
         self.scrollbar_x = self.width - 1
         self.line_length = self.width - 2
@@ -48,6 +35,15 @@ class LogWindow:
         self.datasource[ts] = (2, 'testing')
 
         asyncio.ensure_future(self.demo_log())
+
+    def key_validation(self, ch):
+        if ch == curses.KEY_UP:
+            self.log_up_down(UP)
+
+        elif ch == curses.KEY_DOWN:
+            self.log_up_down(DOWN)
+
+        return ch
 
     def log_up_down(self, increment):
         scroll_max = self.log_length - self.height
@@ -77,14 +73,11 @@ class LogWindow:
         for (index, ts) in enumerate(log_keys):
 
             color, msg = self.datasource[ts]
-            self.window.attron(curses.color_pair(color))
 
             if len(msg) > self.line_length:
                 msg = msg[0:self.line_length]
 
-            self.window.addstr(index, 0, msg)
-            self.window.clrtoeol()
-            self.window.attroff(curses.color_pair(color))
+            self.set_text(index, 0, msg, color, clr=True)
 
         self.last_log_length = self.log_length
 
@@ -113,3 +106,4 @@ class LogWindow:
                               self.scrollbar_x,
                               curses.ACS_CKBOARD,
                               scrollbar_length)
+        self.window.noutrefresh()
