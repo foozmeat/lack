@@ -1,4 +1,6 @@
 import curses
+import signal
+from curses import panel
 from curses.textpad import Textbox
 
 X = 0
@@ -8,26 +10,28 @@ HEIGHT = 3
 
 
 class Window:
-    def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE, bg=curses.COLOR_BLACK):
+    def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE):
         self.window = curses.newwin(height, width, top, left)
 
         self.height = height
         self.width = width
         self.top = top
         self.left = left
+        self.panel = None
 
         self.window_y, self.window_x = self.window.getbegyx()
         self.rows, self.cols = self.window.getmaxyx()
 
-        # if curses.has_colors():
-        #     color = 99
-        #     curses.init_pair(color, fg, bg)
-        #     self.window.bkgdset(ord(' '), curses.color_pair(color))
-        # else:
-        #     self.window.bkgdset(ord(' '), curses.A_BOLD)
+        if curses.has_colors():
+            curses.use_default_colors()
+            for i in range(0, curses.COLORS):
+                curses.init_pair(i, i, -1)
+
+            self.window.bkgdset(ord(' '), curses.color_pair(fg))
 
         self.boxed = False
         self.erase()
+        signal.signal(signal.SIGWINCH, self._resize_handler)
 
         self.window.noutrefresh()
 
@@ -59,6 +63,13 @@ class Window:
 
     def draw(self):
         self.window.noutrefresh()
+
+    def add_panel(self):
+        self.panel = panel.new_panel(self.window)
+
+    def _resize_handler(self, signum, frame):
+        # if we don't trap the window resize we'll just crash
+        pass
 
 
 class PromptWindow(Window):

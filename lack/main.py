@@ -36,7 +36,9 @@ def main() -> None:
 
         event_loop = asyncio.get_event_loop()
 
-        screen = LackScreen(window)
+        rows, cols = window.getmaxyx()
+
+        LackScreen(rows, cols, 0, 0)
 
         # event_loop.set_debug(True)
         try:

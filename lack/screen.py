@@ -1,21 +1,22 @@
 import asyncio
 import curses
-import signal
 from curses import panel
 
 import os
 
 from .lackmanager import LackManager
 from .logwindow import LogWindow
-from .window import PromptWindow
+from .window import Window, PromptWindow
 
 
-class LackScreen:
+class LackScreen(Window):
     rows = 0
     cols = 0
     msgpad = None
 
-    def __init__(self, window, parent=None):
+    def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE):
+        super(LackScreen, self).__init__(height, width, top, left, fg)
+
         self.embedded = False
         self.visible = True
 
@@ -23,20 +24,16 @@ class LackScreen:
         for i in range(0, curses.COLORS):
             curses.init_pair(i, i, -1)
 
-        if hasattr(window, 'window'):
-            # we were passed a panel
-            self.panel = window
-            self.window = window.window()
-            self.parent = parent
-            self.embedded = True
-            self.hide()
-
-        else:
-            self.window = window
-
-        self.window_y, self.window_x = self.window.getbegyx()
-
-        self.rows, self.cols = self.window.getmaxyx()
+        # if hasattr(window, 'window'):
+        #     # we were passed a panel
+        #     self.panel = window
+        #     self.window = window.window()
+        #     self.parent = parent
+        #     self.embedded = True
+        #     self.hide()
+        #
+        # else:
+        #     self.window = window
 
         self.logwin_top = self.window_y + 1
         self.logwin_left = self.window_x + 2
@@ -59,7 +56,6 @@ class LackScreen:
         self._tz = os.getenv('SLACK_TZ', 'UTC')
 
         if not self.embedded:
-            signal.signal(signal.SIGWINCH, self.resize_handler)
             asyncio.ensure_future(self.async_draw())
 
         self.window.border(0)
@@ -69,17 +65,13 @@ class LackScreen:
                           self.cols - 2)
         self.window.noutrefresh()
 
-    def resize_handler(self, signum, frame):
-        # if we don't trap the window resize we'll just crash
-        pass
-
     def key_validation(self, ch):
 
         ch = self.logwin.key_validation(ch)
 
-        if ch == curses.KEY_F1:
-            if self.embedded:
-                self.hide()
+        # if ch == curses.KEY_F1:
+        #     if self.embedded:
+        #         self.hide()
 
         return ch
 
@@ -104,7 +96,7 @@ class LackScreen:
             self.visible = False
             self.panel.bottom()
             panel.update_panels()
-            self.parent.lack_did_hide()
+            # self.parent.lack_did_hide()
 
     def show(self):
         if self.embedded:
@@ -113,7 +105,7 @@ class LackScreen:
             self.panel.top()
             self.window.noutrefresh()
             panel.update_panels()
-            self.parent.lack_did_show()
+            # self.parent.lack_did_show()
 
     # def toggle(self):
     #     if self.visible:
