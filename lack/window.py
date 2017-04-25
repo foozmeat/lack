@@ -1,6 +1,6 @@
 import curses
 import signal
-from curses import panel
+from curses import panel, ascii
 from curses.textpad import Textbox
 
 X = 0
@@ -71,6 +71,28 @@ class Window:
 
     def add_panel(self):
         self.panel = panel.new_panel(self.window)
+        panel.update_panels()
+
+        return self.panel
+
+    def show(self):
+        if self.panel:
+            self.panel.show()
+            # self.window.noutrefresh()
+            panel.update_panels()
+
+    def hide(self):
+        if self.panel:
+            self.panel.hide()
+            # self.window.noutrefresh()
+            panel.update_panels()
+
+    def visible(self):
+        if self.panel:
+            return not self.panel.hidden()
+
+        else:
+            return True
 
     def _resize_handler(self, signum, frame):
         # if we don't trap the window resize we'll just crash
@@ -123,6 +145,15 @@ class PromptWindow(Window):
 
             if msg != '':
                 return msg
+
+    def prompt(self):
+        ch = self.window.getch()
+
+        if ascii.isprint(ch):
+            return chr(ch)
+
+        else:
+            ch = self.key_handler(ch)
 
     def key_handler(self, ch):
 

@@ -1,6 +1,5 @@
 import asyncio
 import curses
-from curses import panel
 
 import os
 
@@ -18,22 +17,10 @@ class LackScreen(Window):
         super(LackScreen, self).__init__(height, width, top, left, fg)
 
         self.embedded = False
-        self.visible = True
 
         curses.use_default_colors()
         for i in range(0, curses.COLORS):
             curses.init_pair(i, i, -1)
-
-        # if hasattr(window, 'window'):
-        #     # we were passed a panel
-        #     self.panel = window
-        #     self.window = window.window()
-        #     self.parent = parent
-        #     self.embedded = True
-        #     self.hide()
-        #
-        # else:
-        #     self.window = window
 
         self.logwin_top = self.window_y + 1
         self.logwin_left = self.window_x + 2
@@ -54,7 +41,7 @@ class LackScreen(Window):
                                       self.logwin_left)
 
         self.promptwin.parent_key_handler = self.key_handler
-        
+
         self._tz = os.getenv('SLACK_TZ', 'UTC')
 
         if not self.embedded:
@@ -68,6 +55,9 @@ class LackScreen(Window):
         self.window.noutrefresh()
 
     def key_handler(self, ch):
+
+        if self.parent_key_handler:
+            ch = self.parent_key_handler(ch)
 
         ch = self.logwin.key_handler(ch)
 
@@ -89,32 +79,6 @@ class LackScreen(Window):
         self.window.attroff(curses.color_pair(6))
         self.window.noutrefresh()
 
-    def hide(self):
-        if self.embedded:
-            self.visible = False
-            self.panel.bottom()
-            panel.update_panels()
-            # self.parent.lack_did_hide()
-
-    def show(self):
-        if self.embedded:
-            self.visible = True
-            self.window.clear()
-            self.panel.top()
-            self.window.noutrefresh()
-            panel.update_panels()
-            # self.parent.lack_did_show()
-
-    # def toggle(self):
-    #     if self.visible:
-    #         self.hide()
-    #
-    #     else:
-    #         self.show()
-    #
-    #     panel.update_panels()
-    #     # curses.doupdate()
-
     @asyncio.coroutine
     def async_draw(self):
         yield from asyncio.sleep(0.025)  # 24 fps
@@ -122,7 +86,7 @@ class LackScreen(Window):
         asyncio.ensure_future(self.async_draw())
 
     def draw(self):
-        if self.visible:
+        if self.visible():
             self.logwin.draw()
 
             if not self.embedded:
