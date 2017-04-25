@@ -36,7 +36,7 @@ class LogWindow(Window):
 
         asyncio.ensure_future(self.demo_log())
 
-    def key_validation(self, ch):
+    def key_handler(self, ch):
         if ch == curses.KEY_UP:
             self.log_up_down(UP)
 

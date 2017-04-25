@@ -18,6 +18,7 @@ class Window:
         self.top = top
         self.left = left
         self.panel = None
+        self.parent_key_handler = None
 
         self.window_y, self.window_x = self.window.getbegyx()
         self.rows, self.cols = self.window.getmaxyx()
@@ -58,7 +59,11 @@ class Window:
 
         self.window.noutrefresh()
 
-    def key_validation(self, ch):
+    def key_handler(self, ch):
+
+        if self.parent_key_handler:
+            ch = self.parent_key_handler(ch)
+
         return ch
 
     def draw(self):
@@ -83,7 +88,7 @@ class PromptWindow(Window):
         # self.window.leaveok(1)  # don't reset cursor position on update
         self.msgpad = None
 
-    def textbox_prompt(self, key_handler=None):
+    def textbox_prompt(self):
         """
         Don't use the standard curses textbox edit function since it won't play
         nicely with asyncio.
@@ -104,10 +109,7 @@ class PromptWindow(Window):
         if ch == -1:
             return
 
-        ch = self.key_validation(ch)
-
-        if key_handler:
-            ch = key_handler(ch)
+        ch = self.key_handler(ch)
 
         dc_result = self.msgpad.do_command(ch)
 
@@ -122,12 +124,10 @@ class PromptWindow(Window):
             if msg != '':
                 return msg
 
-    def key_validation(self, ch):
+    def key_handler(self, ch):
 
-        """
-        This is our chance to modify incoming keystrokes before they're acted on
-        in do_command
-        """
+        if self.parent_key_handler:
+            ch = self.parent_key_handler(ch)
 
         if ch == 127:
             return curses.KEY_BACKSPACE

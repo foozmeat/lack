@@ -53,6 +53,8 @@ class LackScreen(Window):
                                       self.window_y + self.logwin_height + 2,
                                       self.logwin_left)
 
+        self.promptwin.parent_key_handler = self.key_handler
+        
         self._tz = os.getenv('SLACK_TZ', 'UTC')
 
         if not self.embedded:
@@ -65,13 +67,9 @@ class LackScreen(Window):
                           self.cols - 2)
         self.window.noutrefresh()
 
-    def key_validation(self, ch):
+    def key_handler(self, ch):
 
-        ch = self.logwin.key_validation(ch)
-
-        # if ch == curses.KEY_F1:
-        #     if self.embedded:
-        #         self.hide()
+        ch = self.logwin.key_handler(ch)
 
         return ch
 
@@ -130,7 +128,7 @@ class LackScreen(Window):
             if not self.embedded:
                 self._draw_bottom()
 
-            msg = self.promptwin.textbox_prompt(key_handler=self.key_validation)
+            msg = self.promptwin.textbox_prompt()
             self.promptwin.draw()
             if msg:
                 asyncio.async(self.lack_manager.send_message(msg))
