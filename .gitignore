@@ -5,3 +5,5 @@
 /lack.egg-info
 /dist
 /build
+/html-coverage
+/.coverage
