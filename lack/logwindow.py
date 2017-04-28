@@ -30,7 +30,7 @@ class LogWindow(Window):
 
     @asyncio.coroutine
     def demo_log(self):
-        yield from asyncio.sleep(0.1)
+        yield from asyncio.sleep(0.05)
         ts = str(datetime.now().timestamp())
         self.datasource[ts] = (2, 'testing')
 

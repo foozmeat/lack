@@ -110,16 +110,26 @@ class PromptWindow(Window):
         self.window.idlok(1)
         # self.window.leaveok(1)  # don't reset cursor position on update
         self.msgpad = None
+        self.msgpad_window = None
 
-    def textbox_prompt(self):
+    def textbox_prompt(self, prompt=None, color=None):
         """
         Don't use the standard curses textbox edit function since it won't play
         nicely with asyncio.
         """
 
         if not self.msgpad:
-            self.msgpad = _Textbox(self.window, insert_mode=True)
+            if prompt:
+                self.set_text(0, 0, prompt, color=color)
 
+            (y, x) = self.window.getyx()
+            self.msgpad_window = curses.newwin(self.height,
+                                               self.width - x,
+                                               self.window_y,
+                                               self.window_x + x)
+            self.msgpad = _Textbox(self.msgpad_window, insert_mode=True)
+
+        self.window.noutrefresh()
         curses.curs_set(1)
 
         # Since we're using newwin we have to handle cursor position ourselves
@@ -127,7 +137,7 @@ class PromptWindow(Window):
         # (y, x) = self.window.getyx()
         # self.window.move(y, x)
 
-        ch = self.window.getch()
+        ch = self.msgpad_window.getch()
 
         if ch == -1:
             return
@@ -142,19 +152,59 @@ class PromptWindow(Window):
             msg = self.msgpad.gather().strip()
 
             self.msgpad = None
-            self.window.clear()
+            self.msgpad_window = None
+            self.window.erase()
 
             if msg != '':
                 return msg
 
-    def prompt(self):
+    def scan_for_keypress(self):
+
         ch = self.window.getch()
+        self.key_handler(ch)
 
-        if ascii.isprint(ch):
-            return chr(ch)
+    def any_prompt(self, prompt=None, color=None):
 
-        else:
+        self.erase()
+
+        if prompt:
+            self.set_text(0, 0, prompt, color=color)
+
+        self.window.refresh()
+
+        ch = self._getch()
+
+        return chr(ch)
+
+    # def char_prompt(self, prompt=None, color=None):
+    #
+    #     curses.curs_set(1)
+    #     self.window.nodelay(0)
+    #     self.erase()
+    #
+    #     if prompt:
+    #         self.set_text(0, 0, prompt, color=color)
+    #
+    #     ch = -1
+    #     while not ascii.isprint(ch):
+    #         ch = self.window.getch()
+    #         ch = self.key_handler(ch)
+    #
+    #     curses.curs_set(0)
+    #     return chr(ch)
+
+    def _getch(self):
+
+        ch = -1
+
+        while ch <= 0 or ch >= 255:
+            ch = self.window.getch()
             ch = self.key_handler(ch)
+
+            if 0 <= ch <= 255:
+                break
+
+        return ch
 
     def key_handler(self, ch):
 

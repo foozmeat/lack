@@ -11,6 +11,7 @@ import sys
 
 from slackclient import SlackClient
 from sortedcontainers import SortedDict
+from websocket import WebSocketConnectionClosedException
 
 
 class LackManager:
@@ -40,20 +41,34 @@ class LackManager:
         self._sc = SlackClient(slack_token)
         self._tz = os.getenv('SLACK_TZ', 'UTC')
 
-        asyncio.ensure_future(self._connect())
+        self._connect()
+        asyncio.ensure_future(self.update_messages())
 
-    @asyncio.coroutine
     def _connect(self):
         if self._sc.rtm_connect():
             self._connected = True
             # print("Connected")
+            self.loglines = SortedDict()
             self._update_member_cache()
             self._update_channel_cache()
-            self._fetch_history()
-            asyncio.ensure_future(self.update_messages())
+
+            ts = str(datetime.now().timestamp())
+            self._add_logline(3, ts, '', '----- Connected -----')
+            self._fetch_history()  # This could maybe deferred to speed up startup
         else:
-            print("Connection Failed, invalid token?")
-            sys.exit(1)
+            asyncio.ensure_future(self._reconnect())
+
+    @asyncio.coroutine
+    def _reconnect(self):
+        self._connected = False
+        ts = str(datetime.now().timestamp())
+        self._add_logline(3, ts, '', '----- Reconnecting -----')
+
+        if self._sc.rtm_connect():
+            self._connected = True
+
+        else:
+            asyncio.sleep(5, self._reconnect())
 
     def _update_channel_cache(self):
         if not self._connected:
@@ -199,13 +214,16 @@ class LackManager:
     @asyncio.coroutine
     def update_messages(self):
 
-        if not self._connected:
-            return
+        yield from asyncio.sleep(0.05)
 
-        yield from asyncio.sleep(1)
-        evts = self._sc.rtm_read()
+        if self._connected:
 
-        for evt in evts:
-            self._process_event(evt)
+            try:
+                evts = self._sc.rtm_read()
+                for evt in evts:
+                    self._process_event(evt)
+
+            except WebSocketConnectionClosedException:
+                asyncio.ensure_future(self._reconnect())
 
         asyncio.ensure_future(self.update_messages())

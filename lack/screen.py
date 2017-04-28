@@ -42,14 +42,13 @@ class LackScreen(Window):
 
         self._tz = os.getenv('SLACK_TZ', 'UTC')
 
-        asyncio.ensure_future(self.async_draw())
-
         self.window.border(0)
         self.window.hline(self.logwin_height + 1,
                           1,
                           curses.ACS_HLINE,
                           self.cols - 2)
         self.window.noutrefresh()
+        asyncio.ensure_future(self.draw())
 
     def key_handler(self, ch):
 
@@ -61,22 +60,15 @@ class LackScreen(Window):
         return ch
 
     @asyncio.coroutine
-    def async_draw(self):
-        yield from asyncio.sleep(0.025)  # 24 fps
-        self.draw()
-
-        if not self.panel:
-            asyncio.ensure_future(self.async_draw())
-
     def draw(self):
         if self.visible():
             self.logwin.draw()
 
-            msg = self.promptwin.textbox_prompt()
+            msg = self.promptwin.textbox_prompt("> ", curses.COLOR_RED)
             self.promptwin.draw()
             if msg:
                 asyncio.async(self.lack_manager.send_message(msg))
 
-        if not self.panel:
             curses.doupdate()
 
+        asyncio.ensure_future(self.draw())
