@@ -128,6 +128,10 @@ class PromptWindow(Window):
                                                self.window_y,
                                                self.window_x + x)
             self.msgpad = _Textbox(self.msgpad_window, insert_mode=True)
+            self.msgpad_window.keypad(1)
+            self.msgpad_window.nodelay(1)
+            self.msgpad_window.idlok(1)
+            self.msgpad_window.leaveok(1)  # don't reset cursor position on update
 
         self.window.noutrefresh()
         curses.curs_set(1)
@@ -153,7 +157,6 @@ class PromptWindow(Window):
 
             self.msgpad = None
             self.msgpad_window = None
-            self.window.erase()
 
             if msg != '':
                 return msg
