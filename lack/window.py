@@ -122,6 +122,8 @@ class PromptWindow(Window):
             if prompt:
                 self.set_text(0, 0, prompt, color=color)
 
+            curses.curs_set(1)
+
             (y, x) = self.window.getyx()
             self.msgpad_window = curses.newwin(self.height,
                                                self.width - x,
@@ -131,15 +133,8 @@ class PromptWindow(Window):
             self.msgpad_window.keypad(1)
             self.msgpad_window.nodelay(1)
             self.msgpad_window.idlok(1)
-            self.msgpad_window.leaveok(1)  # don't reset cursor position on update
 
-        self.window.noutrefresh()
-        curses.curs_set(1)
-
-        # Since we're using newwin we have to handle cursor position ourselves
-        # self.set_text(0, 0, self.msgpad.gather().strip())
-        # (y, x) = self.window.getyx()
-        # self.window.move(y, x)
+        self.msgpad_window.noutrefresh()
 
         ch = self.msgpad_window.getch()
 
@@ -150,13 +145,12 @@ class PromptWindow(Window):
 
         dc_result = self.msgpad.do_command(ch)
 
-        # self.window.noutrefresh()
-
         if dc_result == 0:
             msg = self.msgpad.gather().strip()
 
             self.msgpad = None
             self.msgpad_window = None
+            curses.curs_set(0)
 
             if msg != '':
                 return msg
