@@ -1,17 +1,12 @@
 import asyncio
 import curses
 
-import os
-
 from .lackmanager import LackManager
 from .logwindow import LogWindow
 from .window import Window, PromptWindow
 
 
 class LackScreen(Window):
-    rows = 0
-    cols = 0
-    msgpad = None
 
     def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE):
         super(LackScreen, self).__init__(height, width, top, left, fg)
@@ -40,8 +35,6 @@ class LackScreen(Window):
 
         self.promptwin.parent_key_handler = self.key_handler
 
-        self._tz = os.getenv('SLACK_TZ', 'UTC')
-
         self.window.border(0)
         self.window.hline(self.logwin_height + 1,
                           1,
@@ -59,15 +52,17 @@ class LackScreen(Window):
 
         return ch
 
-    @asyncio.coroutine
-    def draw(self):
+    async def draw(self):
+
+        await asyncio.sleep(0.05)
+
         if self.visible():
             self.logwin.draw()
 
             msg = self.promptwin.textbox_prompt("> ", curses.COLOR_RED)
             self.promptwin.draw()
             if msg:
-                asyncio.async(self.lack_manager.send_message(msg))
+                asyncio.ensure_future(self.lack_manager.send_message(msg))
 
             curses.doupdate()
 

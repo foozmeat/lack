@@ -58,8 +58,7 @@ class LackManager:
         else:
             asyncio.ensure_future(self._reconnect())
 
-    @asyncio.coroutine
-    def _reconnect(self):
+    async def _reconnect(self):
         self._connected = False
         ts = str(datetime.now().timestamp())
         self._add_logline(3, ts, '', '----- Reconnecting -----')
@@ -199,8 +198,7 @@ class LackManager:
             pass
             # self.loglines.append((1, 'Key Error: {}'.format(e)))
 
-    @asyncio.coroutine
-    def send_message(self, msg):
+    async def send_message(self, msg):
 
         if not self._connected:
             return
@@ -211,10 +209,9 @@ class LackManager:
                           username=self.username,
                           )
 
-    @asyncio.coroutine
-    def update_messages(self):
+    async def update_messages(self):
 
-        yield from asyncio.sleep(0.05)
+        await asyncio.sleep(0.05)
 
         if self._connected:
 

@@ -28,9 +28,9 @@ class LogWindow(Window):
         self.scrollbar_x = self.width - 1
         self.line_length = self.width - 2
 
-    @asyncio.coroutine
-    def demo_log(self):
-        yield from asyncio.sleep(0.05)
+    async def demo_log(self):
+        await asyncio.sleep(0.05)
+
         ts = str(datetime.now().timestamp())
         self.datasource[ts] = (2, 'testing')
 
