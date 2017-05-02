@@ -105,7 +105,6 @@ class PromptWindow(Window):
         super(PromptWindow, self).__init__(*args, **kwargs)
 
         self.window.keypad(1)
-        self.window.timeout(0)
         self.window.nodelay(1)
         self.window.idlok(1)
         # self.window.leaveok(1)  # don't reset cursor position on update
@@ -117,6 +116,8 @@ class PromptWindow(Window):
         Don't use the standard curses textbox edit function since it won't play
         nicely with asyncio.
         """
+
+        self.window.noutrefresh()
 
         if not self.msgpad:
             if prompt:

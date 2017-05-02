@@ -61,7 +61,7 @@ class LackScreen(Window):
             self.logwin.draw()
 
             msg = self.promptwin.textbox_prompt("> ", curses.COLOR_RED)
-            # self.promptwin.draw()
+
             if msg:
                 asyncio.ensure_future(self.lack_manager.send_message(msg))
 

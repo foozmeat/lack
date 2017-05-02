@@ -67,7 +67,8 @@ class LackManager:
             self._connected = True
 
         else:
-            asyncio.sleep(5, self._reconnect())
+            await asyncio.sleep(5)
+            asyncio.ensure_future(self._reconnect())
 
     def _update_channel_cache(self):
         if not self._connected:
