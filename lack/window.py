@@ -1,8 +1,13 @@
 import curses
 import signal
+import asyncio
+
 from curses import panel
 from curses.textpad import Textbox
 
+"""
+Some ideas taken from https://github.com/konsulko/tizen-distro/blob/master/bitbake/lib/bb/ui/ncurses.py
+"""
 class Window:
     def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE) -> None:
         self.window = curses.newwin(height, width, top, left)
@@ -13,6 +18,7 @@ class Window:
         self.left = left
         self.panel = None
         self.parent_key_handler = None
+        self.has_focus = False
 
         self.window_y, self.window_x = self.window.getbegyx()
         self.rows, self.cols = self.window.getmaxyx()
@@ -75,12 +81,14 @@ class Window:
             self.panel.show()
             # self.window.noutrefresh()
             panel.update_panels()
+        self.has_focus = True
 
     def hide(self):
         if self.panel:
             self.panel.hide()
             # self.window.noutrefresh()
             panel.update_panels()
+        self.has_focus = False
 
     def visible(self):
         if self.panel:
@@ -109,6 +117,9 @@ class PromptWindow(Window):
         Don't use the standard curses textbox edit function since it won't play
         nicely with asyncio.
         """
+
+        if not self.has_focus:
+            return
 
         curses.curs_set(1)
         self.window.noutrefresh()

@@ -32,6 +32,7 @@ class LackScreen(Window):
                                       self.logwin_width,
                                       self.window_y + self.logwin_height + 2,
                                       self.logwin_left)
+        self.promptwin.has_focus = True  # There's probably a better way to handle this
 
         self.promptwin.parent_key_handler = self.key_handler
 
@@ -45,8 +46,7 @@ class LackScreen(Window):
 
     def key_handler(self, ch):
 
-        if self.parent_key_handler:
-            ch = self.parent_key_handler(ch)
+        ch = super(LackScreen, self).key_handler(ch)
 
         ch = self.logwin.key_handler(ch)
 
