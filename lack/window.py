@@ -154,18 +154,24 @@ class PromptWindow(Window):
         ch = self.window.getch()
         self.key_handler(ch)
 
-    def any_prompt(self, prompt=None, color=None):
+    def any_key_prompt(self, prompt=None, color=None):
 
-        self.erase()
+        curses.curs_set(1)
 
         if prompt:
             self.set_text(0, 0, prompt, color=color)
 
-        self.window.refresh()
+        self.window.noutrefresh()
+        y, x = self.window.getyx()
+        self.window.move(y, x)
 
-        ch = self._getch()
+        ch = self.window.getch()
+        if ch == -1:
+            return
 
-        return chr(ch)
+        ch = self.key_handler(ch)
+
+        return ch
 
     # def char_prompt(self, prompt=None, color=None):
     #
@@ -184,18 +190,18 @@ class PromptWindow(Window):
     #     curses.curs_set(0)
     #     return chr(ch)
 
-    def _getch(self):
-
-        ch = -1
-
-        while ch <= 0 or ch >= 255:
-            ch = self.window.getch()
-            ch = self.key_handler(ch)
-
-            if 0 <= ch <= 255:
-                break
-
-        return ch
+    # def _getch(self):
+    #
+    #     ch = -1
+    #
+    #     while ch <= 0 or ch >= 255:
+    #         ch = self.window.getch()
+    #         ch = self.key_handler(ch)
+    #
+    #         if 0 <= ch <= 255:
+    #             break
+    #
+    #     return ch
 
     def key_handler(self, ch):
 
@@ -206,22 +212,6 @@ class PromptWindow(Window):
             return curses.KEY_BACKSPACE
 
         return ch
-
-
-# class DecoratedWindow(Window):
-#     """Base class for windows with a box and a title bar"""
-#
-#     def __init__(self, title: str, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE):
-#         super(DecoratedWindow, self).__init__(height - 4, width - 2, top + 3, left + 1, fg)
-#
-#         self.decoration = Window(height, width, top, left, fg)
-#         self.decoration.set_boxed()
-#         self.decoration.win.hline(2, 1, curses.ACS_HLINE, width - 2)
-#         self.set_title(title)
-#
-#     def set_title(self, title):
-#         self.decoration.set_text(1, 1, title.center(self.width - 2), curses.A_BOLD)
-
 
 class _Textbox(Textbox):
     """
