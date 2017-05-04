@@ -29,7 +29,7 @@ class LogWindow(Window):
         self.line_length = self.width - 2
 
     async def demo_log(self):
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0.5)
 
         ts = str(datetime.now().timestamp())
         self.datasource[ts] = (2, 'testing')
@@ -106,4 +106,3 @@ class LogWindow(Window):
                               self.scrollbar_x,
                               curses.ACS_CKBOARD,
                               scrollbar_length)
-        self.window.noutrefresh()
