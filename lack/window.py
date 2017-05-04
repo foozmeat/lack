@@ -3,9 +3,8 @@ import signal
 from curses import panel
 from curses.textpad import Textbox
 
-
 class Window:
-    def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE):
+    def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE) -> None:
         self.window = curses.newwin(height, width, top, left)
 
         self.height = height
@@ -105,7 +104,7 @@ class PromptWindow(Window):
         self.msgpad = None
         self.msgpad_window = None
 
-    def textbox_prompt(self, prompt=None, color=None):
+    def textbox_prompt(self, prompt=None, color=None, send_on_newline=False):
         """
         Don't use the standard curses textbox edit function since it won't play
         nicely with asyncio.
