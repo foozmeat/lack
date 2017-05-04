@@ -111,8 +111,9 @@ class PromptWindow(Window):
         self.window.idlok(1)
         self.msgpad = None
         self.msgpad_window = None
+        self.msgpad_contents = ""
 
-    def textbox_prompt(self, prompt=None, color=None, send_on_newline=False):
+    def textbox_prompt(self, prompt=None, color=None):
         """
         Don't use the standard curses textbox edit function since it won't play
         nicely with asyncio.
@@ -150,11 +151,14 @@ class PromptWindow(Window):
 
         dc_result = self.msgpad.do_command(ch)
 
+        self.msgpad_contents = self.msgpad.gather().strip()
+
         if dc_result == 0:
             msg = self.msgpad.gather().strip()
 
             self.msgpad = None
             self.msgpad_window = None
+            self.msgpad_contents = ""
 
             if msg != '':
                 return msg
@@ -243,3 +247,24 @@ class _Textbox(Textbox):
 
         else:
             return Textbox.do_command(self, ch)
+
+    def gather(self):
+        "Collect and return the contents of the window."
+        result = ""
+        orig_y, orig_x = self.win.getyx()
+
+        self._update_max_yx()
+        for y in range(self.maxy+1):
+            self.win.move(y, 0)
+            stop = self._end_of_line(y)
+            if stop == 0 and self.stripspaces:
+                continue
+            for x in range(self.maxx+1):
+                if self.stripspaces and x > stop:
+                    break
+                result = result + chr(curses.ascii.ascii(self.win.inch(y, x)))
+            if self.maxy > 0:
+                result = result + "\n"
+
+        self.win.move(orig_y, orig_x)
+        return result
