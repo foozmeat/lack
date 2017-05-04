@@ -1,12 +1,7 @@
 import curses
 import signal
-from curses import panel, ascii
+from curses import panel
 from curses.textpad import Textbox
-
-X = 0
-Y = 1
-WIDTH = 2
-HEIGHT = 3
 
 
 class Window:
@@ -107,7 +102,6 @@ class PromptWindow(Window):
         self.window.keypad(1)
         self.window.nodelay(1)
         self.window.idlok(1)
-        # self.window.leaveok(1)  # don't reset cursor position on update
         self.msgpad = None
         self.msgpad_window = None
 
@@ -117,13 +111,12 @@ class PromptWindow(Window):
         nicely with asyncio.
         """
 
+        curses.curs_set(1)
         self.window.noutrefresh()
 
         if not self.msgpad:
             if prompt:
                 self.set_text(0, 0, prompt, color=color)
-
-            curses.curs_set(1)
 
             (y, x) = self.window.getyx()
             self.msgpad_window = curses.newwin(self.height,
@@ -135,7 +128,8 @@ class PromptWindow(Window):
             self.msgpad_window.nodelay(1)
             self.msgpad_window.idlok(1)
 
-        self.msgpad_window.noutrefresh()
+        y, x = self.msgpad_window.getyx()
+        self.msgpad_window.move(y, x)
 
         ch = self.msgpad_window.getch()
 
@@ -151,7 +145,6 @@ class PromptWindow(Window):
 
             self.msgpad = None
             self.msgpad_window = None
-            curses.curs_set(0)
 
             if msg != '':
                 return msg
