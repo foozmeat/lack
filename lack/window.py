@@ -69,7 +69,6 @@ class Window(object):
     def draw(self) -> None:
         self.window.refresh()
 
-
     def add_panel(self) -> panel:
         self.panel = panel.new_panel(self.window)
         panel.update_panels()
@@ -89,7 +88,7 @@ class Window(object):
         self.has_focus = False
 
     def visible(self) -> bool:
-        if self.panel:
+        if self.panel is not None:
             return not self.panel.hidden()
 
         else:
@@ -110,7 +109,7 @@ class BorderedWindow(Window):
     def draw(self) -> None:
         self.border.refresh()
         super(BorderedWindow, self).draw()
-        # self.border.box()
+
 
 class PromptWindow(BorderedWindow):
     def __init__(self, height: int, width: int, top: int, left: int, fg: int = curses.COLOR_WHITE) -> None:
@@ -125,10 +124,6 @@ class PromptWindow(BorderedWindow):
         self.allow_newlines: bool = False
 
     def textbox_prompt(self, prompt: str = None, color: int = curses.COLOR_WHITE) -> Union[str, None]:
-        """
-        Don't use the standard curses textbox edit function since it won't play
-        nicely with asyncio.
-        """
 
         if not self.has_focus:
             return None
