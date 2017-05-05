@@ -112,6 +112,7 @@ class PromptWindow(Window):
         self.msgpad = None
         self.msgpad_window = None
         self.msgpad_contents = ""
+        self.allow_newlines = False
 
     def textbox_prompt(self, prompt=None, color=None):
         """
@@ -149,11 +150,13 @@ class PromptWindow(Window):
 
         ch = self.key_handler(ch)
 
+        newline = True if ch == 10 else False
+
         dc_result = self.msgpad.do_command(ch)
 
         self.msgpad_contents = self.msgpad.gather().strip()
 
-        if dc_result == 0:
+        if newline and not self.allow_newlines:
             msg = self.msgpad.gather().strip()
 
             self.msgpad = None
@@ -236,10 +239,8 @@ class _Textbox(Textbox):
         Textbox.__init__(*args, **kwargs)
 
     def do_command(self, ch):
-        if ch == 10:
-            return 0
 
-        elif ch == curses.KEY_UP:
+        if ch == curses.KEY_UP:
             return 1
 
         elif ch == curses.KEY_DOWN:
