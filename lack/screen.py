@@ -15,36 +15,30 @@ class LackScreen(Window):
         for i in range(0, curses.COLORS):
             curses.init_pair(i, i, -1)
 
-        self.logwin_top = self.window_y + 1
-        self.logwin_left = self.window_x + 2
-        self.logwin_height = self.rows - 5
-        self.logwin_width = self.cols - 4
+        logwin_top = self.window_y
+        logwin_left = self.window_x
+        logwin_height = self.rows - 4
+        logwin_width = self.cols
 
-        self.lack_manager = LackManager(self.logwin_width)
+        self.lack_manager = LackManager(logwin_width)
 
-        self.logwin = LogWindow(self.logwin_height,
-                                self.logwin_width,
-                                self.logwin_top,
-                                self.logwin_left,
+        self.logwin = LogWindow(logwin_height,
+                                logwin_width,
+                                logwin_top,
+                                logwin_left,
                                 self.lack_manager.loglines)
 
-        self.promptwin = PromptWindow(2,
-                                      self.logwin_width,
-                                      self.window_y + self.logwin_height + 2,
-                                      self.logwin_left)
+        self.promptwin = PromptWindow(4,
+                                      logwin_width,
+                                      logwin_top + logwin_height,
+                                      logwin_left)
         self.promptwin.has_focus = True  # There's probably a better way to handle this
 
         self.promptwin.parent_key_handler = self.key_handler
 
-        self.window.border(0)
-        self.window.hline(self.logwin_height + 1,
-                          1,
-                          curses.ACS_HLINE,
-                          self.cols - 2)
-        self.window.noutrefresh()
         asyncio.ensure_future(self.draw())
 
-    def key_handler(self, ch):
+    def key_handler(self, ch: int) -> int:
 
         ch = super(LackScreen, self).key_handler(ch)
 
@@ -52,19 +46,17 @@ class LackScreen(Window):
 
         return ch
 
-    async def draw(self):
+    async def draw(self) -> None:
 
         await asyncio.sleep(0.05)
 
         if self.visible():
-            self.window.noutrefresh()
             self.logwin.draw()
+            self.promptwin.draw()
 
             msg = self.promptwin.textbox_prompt("> ", curses.COLOR_RED)
 
             if msg:
                 asyncio.ensure_future(self.lack_manager.send_message(msg))
-
-            curses.doupdate()
 
         asyncio.ensure_future(self.draw())

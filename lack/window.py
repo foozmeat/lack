@@ -10,8 +10,10 @@ from curses.textpad import Textbox
 """
 Some ideas taken from https://github.com/konsulko/tizen-distro/blob/master/bitbake/lib/bb/ui/ncurses.py
 """
+
+
 class Window(object):
-    def __init__(self, height: int, width: int, top: int, left: int, fg:int=curses.COLOR_WHITE) -> None:
+    def __init__(self, height: int, width: int, top: int, left: int, fg: int = curses.COLOR_WHITE) -> None:
         self.window = curses.newwin(height, width, top, left)
 
         self.height = height
@@ -37,15 +39,8 @@ class Window(object):
         self.erase()
         signal.signal(signal.SIGWINCH, self._resize_handler)
 
-        self.window.noutrefresh()
-
     def erase(self) -> None:
         self.window.erase()
-
-    def set_boxed(self) -> None:
-        self.boxed = True
-        self.window.box()
-        self.window.noutrefresh()
 
     def set_text(self,
                  y: int,
@@ -64,8 +59,6 @@ class Window(object):
 
         self.window.attroff(curses.color_pair(color))
 
-        self.window.noutrefresh()
-
     def key_handler(self, ch: int) -> int:
 
         if self.parent_key_handler is not None:
@@ -74,7 +67,8 @@ class Window(object):
         return ch
 
     def draw(self) -> None:
-        self.window.noutrefresh()
+        self.window.refresh()
+
 
     def add_panel(self) -> panel:
         self.panel = panel.new_panel(self.window)
@@ -85,15 +79,13 @@ class Window(object):
     def show(self) -> None:
         if self.panel:
             self.panel.show()
-            # self.window.noutrefresh()
-            panel.update_panels()
+            # panel.update_panels()
         self.has_focus = True
 
     def hide(self) -> None:
         if self.panel:
             self.panel.hide()
-            # self.window.noutrefresh()
-            panel.update_panels()
+            # panel.update_panels()
         self.has_focus = False
 
     def visible(self) -> bool:
@@ -108,8 +100,20 @@ class Window(object):
         pass
 
 
-class PromptWindow(Window):
-    def __init__(self, height: int, width: int, top: int, left: int, fg:int=curses.COLOR_WHITE) -> None:
+class BorderedWindow(Window):
+    def __init__(self, height: int, width: int, top: int, left: int, fg: int = curses.COLOR_WHITE) -> None:
+        super(BorderedWindow, self).__init__(height - 2, width - 2, top + 1, left + 1, fg)
+
+        self.border = curses.newwin(height, width, top, left)
+        self.border.box()
+
+    def draw(self) -> None:
+        self.border.refresh()
+        super(BorderedWindow, self).draw()
+        # self.border.box()
+
+class PromptWindow(BorderedWindow):
+    def __init__(self, height: int, width: int, top: int, left: int, fg: int = curses.COLOR_WHITE) -> None:
         super(PromptWindow, self).__init__(height, width, top, left, fg)
 
         self.window.keypad(1)
@@ -120,7 +124,7 @@ class PromptWindow(Window):
         self.msgpad_contents: str = ""
         self.allow_newlines: bool = False
 
-    def textbox_prompt(self, prompt:str=None, color:int=curses.COLOR_WHITE) -> Union[str, None]:
+    def textbox_prompt(self, prompt: str = None, color: int = curses.COLOR_WHITE) -> Union[str, None]:
         """
         Don't use the standard curses textbox edit function since it won't play
         nicely with asyncio.
@@ -130,7 +134,6 @@ class PromptWindow(Window):
             return None
 
         curses.curs_set(1)
-        self.window.noutrefresh()
 
         if not self.msgpad:
             if prompt is not None:
@@ -179,13 +182,12 @@ class PromptWindow(Window):
         ch = self.window.getch()
         self.key_handler(ch)
 
-    def any_key_prompt(self, prompt:str="", color:int=curses.COLOR_WHITE) -> Union[str, None]:
+    def any_key_prompt(self, prompt: str = "", color: int = curses.COLOR_WHITE) -> Union[str, None]:
 
         curses.curs_set(1)
 
         self.set_text(0, 0, prompt, color=color)
 
-        self.window.noutrefresh()
         y, x = self.window.getyx()
         self.window.move(y, x)
 
@@ -197,36 +199,6 @@ class PromptWindow(Window):
 
         return ch
 
-    # def char_prompt(self, prompt=None, color=None):
-    #
-    #     curses.curs_set(1)
-    #     self.window.nodelay(0)
-    #     self.erase()
-    #
-    #     if prompt:
-    #         self.set_text(0, 0, prompt, color=color)
-    #
-    #     ch = -1
-    #     while not ascii.isprint(ch):
-    #         ch = self.window.getch()
-    #         ch = self.key_handler(ch)
-    #
-    #     curses.curs_set(0)
-    #     return chr(ch)
-
-    # def _getch(self):
-    #
-    #     ch = -1
-    #
-    #     while ch <= 0 or ch >= 255:
-    #         ch = self.window.getch()
-    #         ch = self.key_handler(ch)
-    #
-    #         if 0 <= ch <= 255:
-    #             break
-    #
-    #     return ch
-
     def key_handler(self, ch: int) -> int:
 
         ch = super(PromptWindow, self).key_handler(ch)
@@ -236,15 +208,21 @@ class PromptWindow(Window):
 
         return ch
 
+    def draw(self) -> None:
+        super(PromptWindow, self).draw()
+
+        if self.msgpad is not None:
+            self.msgpad_window.refresh()
+
+
 class _Textbox(Textbox):
-    """
-    Change the default textbox behavior of enter, up, and down.
-    """
+    def __init__(self, win, insert_mode=False) -> None:
+        super(_Textbox, self).__init__(win, insert_mode)
 
-    def __init__(*args: Any, **kwargs: Any) -> None:
-        super(Textbox, self).__init__(*args, **kwargs)
-
-    def do_command(self, ch:int) -> int:
+    def do_command(self, ch: int) -> int:
+        """
+        Change the default textbox behavior of up, and down.
+        """
 
         if ch == curses.KEY_UP:
             return 1
@@ -261,12 +239,12 @@ class _Textbox(Textbox):
         orig_y, orig_x = self.win.getyx()
 
         self._update_max_yx()
-        for y in range(self.maxy+1):
+        for y in range(self.maxy + 1):
             self.win.move(y, 0)
             stop = self._end_of_line(y)
             if stop == 0 and self.stripspaces:
                 continue
-            for x in range(self.maxx+1):
+            for x in range(self.maxx + 1):
                 if self.stripspaces and x > stop:
                     break
                 result = result + chr(curses.ascii.ascii(self.win.inch(y, x)))
