@@ -2,7 +2,7 @@ import asyncio
 import curses
 import math
 from datetime import datetime
-from .window import Window
+from .window import Window, BorderedWindow
 
 from sortedcontainers import SortedDict
 
@@ -10,7 +10,7 @@ DOWN = 1
 UP = -1
 
 
-class LogWindow(Window):
+class LogWindow(BorderedWindow):
     def __init__(self,
                  height: int,
                  width: int,
@@ -54,36 +54,7 @@ class LogWindow(Window):
         elif self.topline < scroll_max and increment == DOWN:
             self.topline += 1
 
-        self.draw()
-
-    def draw(self):
-        self.log_length = len(self.datasource)
-
-        if self.log_length != self.last_log_length and self.log_length > self.height:
-            self.topline = self.log_length - self.height
-            # bottom = self.log_length
-
-        bottom = self.topline + self.height
-
-        if bottom > self.log_length:
-            bottom = self.log_length
-
-        log_keys = self.datasource.iloc[self.topline:bottom]
-
-        for (index, ts) in enumerate(log_keys):
-
-            color, msg = self.datasource[ts]
-
-            if len(msg) > self.line_length:
-                msg = msg[0:self.line_length]
-
-            self.set_text(index, 0, msg, color, clr=True)
-
-        self.last_log_length = self.log_length
-
-        self._draw_scrollbar()
-        # self.window.addstr(1, 5, f"{self.height} {self.width} {self.top} {self.left}")
-        self.window.noutrefresh()
+        # self.draw()
 
     def _draw_scrollbar(self):
         self.window.vline(1,
@@ -106,3 +77,33 @@ class LogWindow(Window):
                               self.scrollbar_x,
                               curses.ACS_CKBOARD,
                               scrollbar_length)
+
+    def draw(self):
+        super(LogWindow, self).draw()
+
+        self.log_length = len(self.datasource)
+
+        if self.log_length != self.last_log_length and self.log_length > self.height:
+            self.topline = self.log_length - self.height
+
+        bottom = self.topline + self.height
+
+        if bottom > self.log_length:
+            bottom = self.log_length
+
+        log_keys = self.datasource.iloc[self.topline:bottom]
+
+        for (index, ts) in enumerate(log_keys):
+
+            color, msg = self.datasource[ts]
+
+            if len(msg) > self.line_length:
+                msg = msg[0:self.line_length]
+
+            self.set_text(index, 0, msg, color, clr=True)
+
+        self.last_log_length = self.log_length
+
+        self._draw_scrollbar()
+        self.window.refresh()
+
