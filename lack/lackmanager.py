@@ -19,11 +19,10 @@ class LackManager:
     loglines = SortedDict()
     channel_topic = ""
 
-    _membercache = {}
-    _channelcache = {}
-    _rtm_con = None
-    _connected = False
-    _channel_id = None
+    _membercache: dict = {}
+    _channelcache: dict = {}
+    _connected: bool = False
+    _channel_id: str  = None
 
     def __init__(self, output_width):
         slack_token = os.environ["SLACK_API_TOKEN"]

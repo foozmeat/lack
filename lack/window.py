@@ -1,6 +1,8 @@
 import curses
 import signal
 import asyncio
+import typing
+from typing import Callable, Optional, Any, Union
 
 from curses import panel
 from curses.textpad import Textbox
@@ -8,17 +10,17 @@ from curses.textpad import Textbox
 """
 Some ideas taken from https://github.com/konsulko/tizen-distro/blob/master/bitbake/lib/bb/ui/ncurses.py
 """
-class Window:
-    def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE) -> None:
+class Window(object):
+    def __init__(self, height: int, width: int, top: int, left: int, fg:int=curses.COLOR_WHITE) -> None:
         self.window = curses.newwin(height, width, top, left)
 
         self.height = height
         self.width = width
         self.top = top
         self.left = left
-        self.panel = None
-        self.parent_key_handler = None
-        self.has_focus = False
+        self.panel: panel = None
+        self.parent_key_handler: Optional[Callable[[int], int]] = None
+        self.has_focus: bool = False
 
         self.window_y, self.window_x = self.window.getbegyx()
         self.rows, self.cols = self.window.getmaxyx()
@@ -37,97 +39,101 @@ class Window:
 
         self.window.noutrefresh()
 
-    def erase(self):
+    def erase(self) -> None:
         self.window.erase()
 
-    def set_boxed(self):
+    def set_boxed(self) -> None:
         self.boxed = True
         self.window.box()
         self.window.noutrefresh()
 
-    def set_text(self, y, x, text, color=None, clr=False, *args):
+    def set_text(self,
+                 y: int,
+                 x: int,
+                 text: str,
+                 color: int = curses.COLOR_WHITE,
+                 clr: bool = False,
+                 *args: Any) -> None:
 
-        if color:
-            self.window.attron(curses.color_pair(color))
+        self.window.attron(curses.color_pair(color))
 
         self.window.addstr(y, x, text, *args)
 
         if clr:
             self.window.clrtoeol()
 
-        if color:
-            self.window.attroff(curses.color_pair(color))
+        self.window.attroff(curses.color_pair(color))
 
         self.window.noutrefresh()
 
-    def key_handler(self, ch):
+    def key_handler(self, ch: int) -> int:
 
-        if self.parent_key_handler:
+        if self.parent_key_handler is not None:
             ch = self.parent_key_handler(ch)
 
         return ch
 
-    def draw(self):
+    def draw(self) -> None:
         self.window.noutrefresh()
 
-    def add_panel(self):
+    def add_panel(self) -> panel:
         self.panel = panel.new_panel(self.window)
         panel.update_panels()
 
         return self.panel
 
-    def show(self):
+    def show(self) -> None:
         if self.panel:
             self.panel.show()
             # self.window.noutrefresh()
             panel.update_panels()
         self.has_focus = True
 
-    def hide(self):
+    def hide(self) -> None:
         if self.panel:
             self.panel.hide()
             # self.window.noutrefresh()
             panel.update_panels()
         self.has_focus = False
 
-    def visible(self):
+    def visible(self) -> bool:
         if self.panel:
             return not self.panel.hidden()
 
         else:
             return True
 
-    def _resize_handler(self, signum, frame):
+    def _resize_handler(self, signum: Any, frame: Any) -> None:
         # if we don't trap the window resize we'll just crash
         pass
 
 
 class PromptWindow(Window):
-    def __init__(self, *args, **kwargs):
-        super(PromptWindow, self).__init__(*args, **kwargs)
+    def __init__(self, height: int, width: int, top: int, left: int, fg:int=curses.COLOR_WHITE) -> None:
+        super(PromptWindow, self).__init__(height, width, top, left, fg)
 
         self.window.keypad(1)
         self.window.nodelay(1)
         self.window.idlok(1)
-        self.msgpad = None
-        self.msgpad_window = None
-        self.msgpad_contents = ""
-        self.allow_newlines = False
+        self.msgpad: Optional[_Textbox] = None
+        self.msgpad_window: Any = None
+        self.msgpad_contents: str = ""
+        self.allow_newlines: bool = False
 
-    def textbox_prompt(self, prompt=None, color=None):
+    def textbox_prompt(self, prompt:str=None, color:int=curses.COLOR_WHITE) -> Union[str, None]:
         """
         Don't use the standard curses textbox edit function since it won't play
         nicely with asyncio.
         """
 
         if not self.has_focus:
-            return
+            return None
 
         curses.curs_set(1)
         self.window.noutrefresh()
 
         if not self.msgpad:
-            if prompt:
+            if prompt is not None:
                 self.set_text(0, 0, prompt, color=color)
 
             (y, x) = self.window.getyx()
@@ -146,7 +152,7 @@ class PromptWindow(Window):
         ch = self.msgpad_window.getch()
 
         if ch == -1:
-            return
+            return None
 
         ch = self.key_handler(ch)
 
@@ -166,17 +172,18 @@ class PromptWindow(Window):
             if msg != '':
                 return msg
 
-    def scan_for_keypress(self):
+        return None
+
+    def scan_for_keypress(self) -> None:
 
         ch = self.window.getch()
         self.key_handler(ch)
 
-    def any_key_prompt(self, prompt=None, color=None):
+    def any_key_prompt(self, prompt:str="", color:int=curses.COLOR_WHITE) -> Union[str, None]:
 
         curses.curs_set(1)
 
-        if prompt:
-            self.set_text(0, 0, prompt, color=color)
+        self.set_text(0, 0, prompt, color=color)
 
         self.window.noutrefresh()
         y, x = self.window.getyx()
@@ -184,7 +191,7 @@ class PromptWindow(Window):
 
         ch = self.window.getch()
         if ch == -1:
-            return
+            return None
 
         ch = self.key_handler(ch)
 
@@ -220,7 +227,7 @@ class PromptWindow(Window):
     #
     #     return ch
 
-    def key_handler(self, ch):
+    def key_handler(self, ch: int) -> int:
 
         if self.parent_key_handler:
             ch = self.parent_key_handler(ch)
@@ -235,10 +242,10 @@ class _Textbox(Textbox):
     Change the default textbox behavior of enter, up, and down.
     """
 
-    def __init__(*args, **kwargs):
-        Textbox.__init__(*args, **kwargs)
+    def __init__(*args: Any, **kwargs: Any) -> None:
+        super(Textbox, self).__init__(*args, **kwargs)
 
-    def do_command(self, ch):
+    def do_command(self, ch:int) -> int:
 
         if ch == curses.KEY_UP:
             return 1
@@ -249,7 +256,7 @@ class _Textbox(Textbox):
         else:
             return Textbox.do_command(self, ch)
 
-    def gather(self):
+    def gather(self) -> str:
         "Collect and return the contents of the window."
         result = ""
         orig_y, orig_x = self.win.getyx()

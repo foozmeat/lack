@@ -8,7 +8,7 @@ from .window import Window, PromptWindow
 
 class LackScreen(Window):
 
-    def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE):
+    def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE) -> None:
         super(LackScreen, self).__init__(height, width, top, left, fg)
 
         curses.use_default_colors()
