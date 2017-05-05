@@ -79,7 +79,6 @@ class LogWindow(BorderedWindow):
                               scrollbar_length)
 
     def draw(self):
-        super(LogWindow, self).draw()
 
         self.log_length = len(self.datasource)
 
@@ -105,5 +104,7 @@ class LogWindow(BorderedWindow):
         self.last_log_length = self.log_length
 
         self._draw_scrollbar()
-        self.window.refresh()
+        self.window.box()
+
+        super(LogWindow, self).draw()
 

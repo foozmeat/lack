@@ -7,18 +7,13 @@ from .window import Window, PromptWindow
 
 
 class LackScreen(Window):
-
     def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE) -> None:
         super(LackScreen, self).__init__(height, width, top, left, fg)
 
-        curses.use_default_colors()
-        for i in range(0, curses.COLORS):
-            curses.init_pair(i, i, -1)
-
         logwin_top = self.window_y
         logwin_left = self.window_x
-        logwin_height = self.rows - 4
-        logwin_width = self.cols
+        logwin_height = self.height - 4
+        logwin_width = self.width
 
         self.lack_manager = LackManager(logwin_width)
 

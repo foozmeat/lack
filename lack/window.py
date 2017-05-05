@@ -25,7 +25,6 @@ class Window(object):
         self.has_focus: bool = False
 
         self.window_y, self.window_x = self.window.getbegyx()
-        self.rows, self.cols = self.window.getmaxyx()
 
         if curses.has_colors():
             curses.use_default_colors()
@@ -35,8 +34,6 @@ class Window(object):
             self.window.attron(curses.A_BOLD)
             self.window.bkgdset(ord(' '), curses.color_pair(fg))
 
-        self.boxed = False
-        self.erase()
         signal.signal(signal.SIGWINCH, self._resize_handler)
 
     def erase(self) -> None:
@@ -52,7 +49,10 @@ class Window(object):
 
         self.window.attron(curses.color_pair(color))
 
-        self.window.addstr(y, x, text, *args)
+        self.window.addstr(y + 1,
+                           x + 1,
+                           text,
+                           *args)
 
         if clr:
             self.window.clrtoeol()
@@ -67,11 +67,14 @@ class Window(object):
         return ch
 
     def draw(self) -> None:
+        # pass
+        self.window.touchwin()
         self.window.refresh()
 
     def add_panel(self) -> panel:
         self.panel = panel.new_panel(self.window)
         panel.update_panels()
+        curses.doupdate()
 
         return self.panel
 
@@ -79,12 +82,14 @@ class Window(object):
         if self.panel:
             self.panel.show()
             # panel.update_panels()
+            # curses.doupdate()
         self.has_focus = True
 
     def hide(self) -> None:
         if self.panel:
             self.panel.hide()
             # panel.update_panels()
+            # curses.doupdate()
         self.has_focus = False
 
     def visible(self) -> bool:
@@ -101,14 +106,19 @@ class Window(object):
 
 class BorderedWindow(Window):
     def __init__(self, height: int, width: int, top: int, left: int, fg: int = curses.COLOR_WHITE) -> None:
-        super(BorderedWindow, self).__init__(height - 2, width - 2, top + 1, left + 1, fg)
+        # super(BorderedWindow, self).__init__(height - 2, width - 2, top + 1, left + 1, fg)
+        super(BorderedWindow, self).__init__(height, width, top, left, fg)
+        self.window.box()
 
-        self.border = curses.newwin(height, width, top, left)
-        self.border.box()
+        self.height -= 2
+        self.width -= 2
+        self.window_y += 1
+        self.window_x += 1
 
-    def draw(self) -> None:
-        self.border.refresh()
-        super(BorderedWindow, self).draw()
+        def draw(self) -> None:
+            #     pass
+            self.window.box()
+            super(BorderedWindow, self).draw()
 
 
 class PromptWindow(BorderedWindow):
@@ -203,11 +213,12 @@ class PromptWindow(BorderedWindow):
 
         return ch
 
-    def draw(self) -> None:
-        super(PromptWindow, self).draw()
+        def draw(self) -> None:
+            # pass
+            super(PromptWindow, self).draw()
 
-        if self.msgpad is not None:
-            self.msgpad_window.refresh()
+            if self.msgpad is not None:
+                self.msgpad_window.refresh()
 
 
 class _Textbox(Textbox):
