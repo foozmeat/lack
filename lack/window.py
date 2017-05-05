@@ -229,8 +229,7 @@ class PromptWindow(Window):
 
     def key_handler(self, ch: int) -> int:
 
-        if self.parent_key_handler:
-            ch = self.parent_key_handler(ch)
+        ch = super(PromptWindow, self).key_handler(ch)
 
         if ch == 127:
             return curses.KEY_BACKSPACE
