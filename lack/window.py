@@ -49,8 +49,8 @@ class Window(object):
 
         self.window.attron(curses.color_pair(color))
 
-        self.window.addstr(y + 1,
-                           x + 1,
+        self.window.addstr(y,
+                           x,
                            text,
                            *args)
 
@@ -58,6 +58,7 @@ class Window(object):
             self.window.clrtoeol()
 
         self.window.attroff(curses.color_pair(color))
+        self.window.refresh()
 
     def key_handler(self, ch: int) -> int:
 
@@ -67,8 +68,8 @@ class Window(object):
         return ch
 
     def draw(self) -> None:
-        # pass
-        self.window.refresh()
+        pass
+        # self.window.refresh()
 
     def add_panel(self) -> panel:
         self.panel = panel.new_panel(self.window)
@@ -80,15 +81,15 @@ class Window(object):
     def show(self) -> None:
         if self.panel:
             self.panel.show()
-            # panel.update_panels()
-            # curses.doupdate()
+            panel.update_panels()
+            curses.doupdate()
         self.has_focus = True
 
     def hide(self) -> None:
         if self.panel:
             self.panel.hide()
-            # panel.update_panels()
-            # curses.doupdate()
+            panel.update_panels()
+            curses.doupdate()
         self.has_focus = False
 
     def visible(self) -> bool:
@@ -113,6 +114,15 @@ class BorderedWindow(Window):
         self.width -= 2
         self.window_y += 1
         self.window_x += 1
+
+    def set_text(self,
+                 y: int,
+                 x: int,
+                 text: str,
+                 color: int = curses.COLOR_WHITE,
+                 clr: bool = False,
+                 *args: Any) -> None:
+        super(BorderedWindow, self).set_text(y + 1, x + 1, text, color=color, clr=clr, *args)
 
 
 class PromptWindow(BorderedWindow):
@@ -139,14 +149,16 @@ class PromptWindow(BorderedWindow):
                 self.set_text(0, 0, prompt, color=color)
 
             (y, x) = self.window.getyx()
-            self.msgpad_window = curses.newwin(self.height,
-                                               self.width - x,
-                                               self.window_y,
-                                               self.window_x + x)
+            self.msgpad_window = self.window.subwin(self.height,
+                                                    self.width - x,
+                                                    self.window_y,
+                                                    self.window_x + x)
             self.msgpad = _Textbox(self.msgpad_window, insert_mode=True)
             self.msgpad_window.keypad(1)
             self.msgpad_window.nodelay(1)
             self.msgpad_window.idlok(1)
+
+            self.window.refresh()
 
         y, x = self.msgpad_window.getyx()
         self.msgpad_window.move(y, x)
@@ -155,6 +167,8 @@ class PromptWindow(BorderedWindow):
 
         if ch == -1:
             return None
+
+        self.msgpad_window.refresh()
 
         ch = self.key_handler(ch)
 
@@ -206,6 +220,9 @@ class PromptWindow(BorderedWindow):
             return curses.KEY_BACKSPACE
 
         return ch
+
+    def draw(self):
+        pass
 
 
 class _Textbox(Textbox):

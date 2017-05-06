@@ -102,6 +102,6 @@ class LogWindow(BorderedWindow):
         self.last_log_length = self.log_length
 
         self._draw_scrollbar()
+        self.window.refresh()
 
-        super(LogWindow, self).draw()
 
