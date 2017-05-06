@@ -47,7 +47,6 @@ class LackScreen(Window):
 
         if self.visible():
             self.logwin.draw()
-            self.promptwin.draw()
 
             msg = self.promptwin.textbox_prompt("> ", curses.COLOR_RED)
 

@@ -181,10 +181,13 @@ class PromptWindow(BorderedWindow):
         if newline and not self.allow_newlines:
             msg = self.msgpad.gather().strip()
 
+            self.msgpad_window.erase()
+
             self.msgpad = None
             self.msgpad_window = None
             self.msgpad_contents = ""
 
+            self.window.refresh()
             if msg != '':
                 return msg
 
@@ -221,9 +224,6 @@ class PromptWindow(BorderedWindow):
 
         return ch
 
-    def draw(self):
-        pass
-
 
 class _Textbox(Textbox):
     def __init__(self, win, insert_mode=False) -> None:
@@ -244,7 +244,7 @@ class _Textbox(Textbox):
             return Textbox.do_command(self, ch)
 
     def gather(self) -> str:
-        "Collect and return the contents of the window."
+        """Collect and return the contents of the window."""
         result = ""
         orig_y, orig_x = self.win.getyx()
 
