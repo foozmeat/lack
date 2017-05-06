@@ -68,7 +68,6 @@ class Window(object):
 
     def draw(self) -> None:
         # pass
-        self.window.touchwin()
         self.window.refresh()
 
     def add_panel(self) -> panel:
@@ -114,11 +113,6 @@ class BorderedWindow(Window):
         self.width -= 2
         self.window_y += 1
         self.window_x += 1
-
-        def draw(self) -> None:
-            #     pass
-            self.window.box()
-            super(BorderedWindow, self).draw()
 
 
 class PromptWindow(BorderedWindow):
@@ -212,13 +206,6 @@ class PromptWindow(BorderedWindow):
             return curses.KEY_BACKSPACE
 
         return ch
-
-        def draw(self) -> None:
-            # pass
-            super(PromptWindow, self).draw()
-
-            if self.msgpad is not None:
-                self.msgpad_window.refresh()
 
 
 class _Textbox(Textbox):
