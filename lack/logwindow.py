@@ -25,14 +25,14 @@ class LogWindow(BorderedWindow):
         self.last_log_length = 0
         self.log_length = 0
 
-        self.scrollbar_x = self.width - 1
-        self.line_length = self.width - 2
+        self.scrollbar_x = self.width + 1
+        self.line_length = self.width
 
     async def demo_log(self):
         await asyncio.sleep(0.5)
 
         ts = str(datetime.now().timestamp())
-        self.datasource[ts] = (2, 'testing')
+        self.datasource[ts] = (2, f'{ts} testing')
 
         asyncio.ensure_future(self.demo_log())
 
@@ -53,8 +53,6 @@ class LogWindow(BorderedWindow):
 
         elif self.topline < scroll_max and increment == DOWN:
             self.topline += 1
-
-        # self.draw()
 
     def _draw_scrollbar(self):
         self.window.vline(1,
@@ -78,7 +76,7 @@ class LogWindow(BorderedWindow):
                               curses.ACS_CKBOARD,
                               scrollbar_length)
 
-    def draw(self):
+    def draw(self) -> None:
 
         self.log_length = len(self.datasource)
 
@@ -104,7 +102,6 @@ class LogWindow(BorderedWindow):
         self.last_log_length = self.log_length
 
         self._draw_scrollbar()
-        self.window.box()
 
         super(LogWindow, self).draw()
 
