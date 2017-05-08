@@ -68,8 +68,19 @@ class Window(object):
         return ch
 
     def draw(self) -> None:
+        self._before_content()
+        self._content()
+        self._after_content()
+
+    def _before_content(self) -> None:
         pass
+
+    def _content(self) -> None:
+        pass
+
+    def _after_content(self) -> None:
         # self.window.refresh()
+        pass
 
     def add_panel(self) -> panel:
         self.panel = panel.new_panel(self.window)
@@ -123,6 +134,11 @@ class BorderedWindow(Window):
                  clr: bool = False,
                  *args: Any) -> None:
         super(BorderedWindow, self).set_text(y + 1, x + 1, text, color=color, clr=clr, *args)
+
+    def _before_content(self) -> None:
+
+        if self.panel is None:
+            self.window.box()
 
 
 class PromptWindow(BorderedWindow):

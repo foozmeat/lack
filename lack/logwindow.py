@@ -76,7 +76,7 @@ class LogWindow(BorderedWindow):
                               curses.ACS_CKBOARD,
                               scrollbar_length)
 
-    def draw(self) -> None:
+    def _content(self) -> None:
 
         self.log_length = len(self.datasource)
 
@@ -102,6 +102,7 @@ class LogWindow(BorderedWindow):
         self.last_log_length = self.log_length
 
         self._draw_scrollbar()
-        self.window.refresh()
 
-
+    def _after_content(self) -> None:
+        # needed for scrollbar
+        self.window.noutrefresh()
