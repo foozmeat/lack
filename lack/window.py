@@ -102,6 +102,9 @@ class SubWindow(object):
         self.parent_key_handler: Optional[Callable[[int], int]] = None
         self.window.bkgdset(ord(' '), curses.color_pair(fg))
 
+    def hline(self, y:int, x:int, width:int) -> None:
+        self.window.hline(y, x, curses.ACS_HLINE, width)
+
     def set_text(self,
                  y: int,
                  x: int,
@@ -169,6 +172,8 @@ class BorderedSubWindow(SubWindow):
                  *args: Any) -> None:
         super(BorderedSubWindow, self).set_text(y + 1, x + 1, text, color=color, clr=clr, *args)
 
+    def hline(self, y:int, x:int, width:int) -> None:
+        self.window.hline(y + 1, x + 1, curses.ACS_HLINE, width)
 
 class PromptSubWindow(BorderedSubWindow):
     def __init__(self, *args, **kwargs) -> None:

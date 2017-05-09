@@ -28,8 +28,8 @@ class LogSubWindow(BorderedSubWindow):
         self.last_log_length = 0
         self.log_length = 0
 
-        self.scrollbar_x = self.width + 1
-        self.line_length = self.width
+        self.scrollbar_x = self.width
+        self.line_length = self.width - 1
 
     async def demo_log(self):
         await asyncio.sleep(0.5)
@@ -59,8 +59,18 @@ class LogSubWindow(BorderedSubWindow):
 
     def _draw_scrollbar(self):
         self.window.vline(1,
+                          self.scrollbar_x - 1,
+                          curses.ACS_VLINE,
+                          self.height)
+
+        self.window.vline(1,
                           self.scrollbar_x,
                           ' ',
+                          self.height)
+
+        self.window.vline(1,
+                          self.scrollbar_x + 1,
+                          curses.ACS_VLINE,
                           self.height)
 
         if self.log_length > self.height:
