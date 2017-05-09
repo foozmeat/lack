@@ -191,6 +191,8 @@ class PromptSubWindow(BorderedSubWindow):
         curses.curs_set(1)
 
         if not self.msgpad:
+            self.window.move(0, 0)
+
             if prompt is not None:
                 self.set_text(0, 0, prompt, color=color)
 
@@ -271,6 +273,9 @@ class PromptSubWindow(BorderedSubWindow):
 
         return ch
 
+    def _after_content(self) -> None:
+        pass
+        # self.window.noutrefresh()
 
 class _Textbox(Textbox):
     def __init__(self, win, insert_mode=False) -> None:
