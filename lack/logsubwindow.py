@@ -2,7 +2,9 @@ import asyncio
 import curses
 import math
 from datetime import datetime
-from .window import Window, BorderedWindow
+from typing import Any
+
+from .window import BorderedSubWindow
 
 from sortedcontainers import SortedDict
 
@@ -10,15 +12,16 @@ DOWN = 1
 UP = -1
 
 
-class LogWindow(BorderedWindow):
+class LogSubWindow(BorderedSubWindow):
     def __init__(self,
-                 height: int,
-                 width: int,
-                 top: int,
-                 left: int,
-                 datasource: SortedDict) -> None:
+                 window: Any,
+                 height: int = 0,
+                 width: int = 0,
+                 top: int = 0,
+                 left: int = 0,
+                 datasource: SortedDict = SortedDict()) -> None:
 
-        super(LogWindow, self).__init__(height, width, top, left)
+        super(LogSubWindow, self).__init__(window, height, width, top, left)
 
         self.datasource = datasource
         self.topline = 0
@@ -102,7 +105,3 @@ class LogWindow(BorderedWindow):
         self.last_log_length = self.log_length
 
         self._draw_scrollbar()
-
-    def _after_content(self) -> None:
-        # needed for scrollbar
-        self.window.noutrefresh()

@@ -2,32 +2,26 @@ import asyncio
 import curses
 
 from .lackmanager import LackManager
-from .logwindow import LogWindow
-from .window import Window, PromptWindow
+from .logsubwindow import LogSubWindow
+from .window import PromptSubWindow, PanelWindow
 
 
-class LackScreen(Window):
+class LackMainWindow(PanelWindow):
     def __init__(self, height: int, width: int, top: int, left: int, fg=curses.COLOR_WHITE) -> None:
-        super(LackScreen, self).__init__(height, width, top, left, fg)
+        super(LackMainWindow, self).__init__(height, width, top, left, fg)
 
-        logwin_top = self.window_y
-        logwin_left = self.window_x
         logwin_height = self.height - 4
         logwin_width = self.width
 
         self.lack_manager = LackManager(logwin_width)
 
-        self.logwin = LogWindow(logwin_height,
-                                logwin_width,
-                                logwin_top,
-                                logwin_left,
-                                self.lack_manager.loglines)
+        self.logwin = LogSubWindow(self,
+                                   height=logwin_height,
+                                   datasource=self.lack_manager.loglines)
 
-        self.promptwin = PromptWindow(4,
-                                      logwin_width,
-                                      logwin_top + logwin_height,
-                                      logwin_left)
-        self.promptwin.has_focus = True  # There's probably a better way to handle this
+        self.promptwin = PromptSubWindow(self,
+                                         height=4,
+                                         top=logwin_height)
 
         self.promptwin.parent_key_handler = self.key_handler
 
@@ -35,7 +29,7 @@ class LackScreen(Window):
 
     def key_handler(self, ch: int) -> int:
 
-        ch = super(LackScreen, self).key_handler(ch)
+        ch = super(LackMainWindow, self).key_handler(ch)
 
         ch = self.logwin.key_handler(ch)
 

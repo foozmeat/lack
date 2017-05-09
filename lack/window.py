@@ -1,30 +1,26 @@
 import curses
 import signal
-import asyncio
-import typing
-from typing import Callable, Optional, Any, Union
-
-from curses import panel
+from curses import panel, ascii
 from curses.textpad import Textbox
+from typing import Callable, Optional, Any, Union
 
 """
 Some ideas taken from https://github.com/konsulko/tizen-distro/blob/master/bitbake/lib/bb/ui/ncurses.py
 """
 
+def flush():
+    panel.update_panels()
+    curses.doupdate()
 
 class Window(object):
     def __init__(self, height: int, width: int, top: int, left: int, fg: int = curses.COLOR_WHITE) -> None:
         self.window = curses.newwin(height, width, top, left)
-
         self.height = height
         self.width = width
         self.top = top
         self.left = left
-        self.panel: panel = None
-        self.parent_key_handler: Optional[Callable[[int], int]] = None
-        self.has_focus: bool = False
-
         self.window_y, self.window_x = self.window.getbegyx()
+        self.parent_key_handler: Optional[Callable[[int], int]] = None
 
         if curses.has_colors():
             curses.use_default_colors()
@@ -39,6 +35,73 @@ class Window(object):
     def erase(self) -> None:
         self.window.erase()
 
+    def _resize_handler(self, signum: Any, frame: Any) -> None:
+        # if we don't trap the window resize we'll just crash
+        pass
+
+    def key_handler(self, ch: int) -> int:
+
+        if self.parent_key_handler is not None:
+            ch = self.parent_key_handler(ch)
+
+        return ch
+
+
+class PanelWindow(Window):
+    def __init__(self, *args, **kwargs) -> None:
+        super(PanelWindow, self).__init__(*args, **kwargs)
+
+        self.panel = panel.new_panel(self.window)
+        self.panel.top()
+
+        flush()
+
+    def show(self) -> None:
+        self.panel.show()
+        flush()
+        # self.has_focus = True
+
+    def hide(self) -> None:
+        self.panel.hide()
+        flush()
+        # self.has_focus = False
+
+    def visible(self) -> bool:
+        return not self.panel.hidden()
+
+
+class SubWindow(object):
+
+    """
+    Subwindows are curses sub-windows - they share memory with their parent window. Top/Left are relative to the
+    top/left of the parent window.
+    """
+
+    def __init__(self,
+                 window: Window,
+                 height: int = 0,
+                 width: int = 0,
+                 top: int = 0,
+                 left: int = 0,
+                 fg: int = curses.COLOR_WHITE) -> None:
+
+        if height == 0:
+            height = window.height
+
+        if width == 0:
+            width = window.width
+
+        self.parent_window = window
+        self.window = self.parent_window.window.derwin(height, width, top, left)
+
+        self.height = height
+        self.width = width
+        self.top = top
+        self.left = left
+        self.window_y, self.window_x = self.window.getbegyx()
+        self.parent_key_handler: Optional[Callable[[int], int]] = None
+        self.window.bkgdset(ord(' '), curses.color_pair(fg))
+
     def set_text(self,
                  y: int,
                  x: int,
@@ -49,16 +112,35 @@ class Window(object):
 
         self.window.attron(curses.color_pair(color))
 
-        self.window.addstr(y,
-                           x,
-                           text,
-                           *args)
+        self.window.addstr(y, x, text, *args)
 
         if clr:
             self.window.clrtoeol()
 
         self.window.attroff(curses.color_pair(color))
-        self.window.refresh()
+
+    def draw(self) -> None:
+        self._before_content()
+        self._top_content()
+        self._content()
+        self._bottom_content()
+        self._after_content()
+
+    def _before_content(self) -> None:
+        pass
+
+    def _top_content(self) -> None:
+        pass
+
+    def _content(self) -> None:
+        pass
+
+    def _bottom_content(self) -> None:
+        pass
+
+    def _after_content(self) -> None:
+        self.window.noutrefresh()
+        # pass
 
     def key_handler(self, ch: int) -> int:
 
@@ -67,58 +149,10 @@ class Window(object):
 
         return ch
 
-    def draw(self) -> None:
-        self._before_content()
-        self._content()
-        self._after_content()
 
-    def _before_content(self) -> None:
-        pass
-
-    def _content(self) -> None:
-        pass
-
-    def _after_content(self) -> None:
-        # self.window.refresh()
-        pass
-
-    def add_panel(self) -> panel:
-        self.panel = panel.new_panel(self.window)
-        panel.update_panels()
-        curses.doupdate()
-
-        return self.panel
-
-    def show(self) -> None:
-        if self.panel:
-            self.panel.show()
-            panel.update_panels()
-            curses.doupdate()
-        self.has_focus = True
-
-    def hide(self) -> None:
-        if self.panel:
-            self.panel.hide()
-            panel.update_panels()
-            curses.doupdate()
-        self.has_focus = False
-
-    def visible(self) -> bool:
-        if self.panel is not None:
-            return not self.panel.hidden()
-
-        else:
-            return True
-
-    def _resize_handler(self, signum: Any, frame: Any) -> None:
-        # if we don't trap the window resize we'll just crash
-        pass
-
-
-class BorderedWindow(Window):
-    def __init__(self, height: int, width: int, top: int, left: int, fg: int = curses.COLOR_WHITE) -> None:
-        # super(BorderedWindow, self).__init__(height - 2, width - 2, top + 1, left + 1, fg)
-        super(BorderedWindow, self).__init__(height, width, top, left, fg)
+class BorderedSubWindow(SubWindow):
+    def __init__(self, *args, **kwargs) -> None:
+        super(BorderedSubWindow, self).__init__(*args, **kwargs)
         self.window.box()
 
         self.height -= 2
@@ -133,17 +167,12 @@ class BorderedWindow(Window):
                  color: int = curses.COLOR_WHITE,
                  clr: bool = False,
                  *args: Any) -> None:
-        super(BorderedWindow, self).set_text(y + 1, x + 1, text, color=color, clr=clr, *args)
-
-    def _before_content(self) -> None:
-
-        if self.panel is None:
-            self.window.box()
+        super(BorderedSubWindow, self).set_text(y + 1, x + 1, text, color=color, clr=clr, *args)
 
 
-class PromptWindow(BorderedWindow):
-    def __init__(self, height: int, width: int, top: int, left: int, fg: int = curses.COLOR_WHITE) -> None:
-        super(PromptWindow, self).__init__(height, width, top, left, fg)
+class PromptSubWindow(BorderedSubWindow):
+    def __init__(self, *args, **kwargs) -> None:
+        super(PromptSubWindow, self).__init__(*args, **kwargs)
 
         self.window.keypad(1)
         self.window.nodelay(1)
@@ -152,6 +181,7 @@ class PromptWindow(BorderedWindow):
         self.msgpad_window: Any = None
         self.msgpad_contents: str = ""
         self.allow_newlines: bool = False
+        self.has_focus: bool = True
 
     def textbox_prompt(self, prompt: str = None, color: int = curses.COLOR_WHITE) -> Union[str, None]:
 
@@ -169,6 +199,7 @@ class PromptWindow(BorderedWindow):
                                                     self.width - x,
                                                     self.window_y,
                                                     self.window_x + x)
+            self.msgpad_window.erase()
             self.msgpad = _Textbox(self.msgpad_window, insert_mode=True)
             self.msgpad_window.keypad(1)
             self.msgpad_window.nodelay(1)
@@ -190,7 +221,7 @@ class PromptWindow(BorderedWindow):
 
         newline = True if ch == 10 else False
 
-        dc_result = self.msgpad.do_command(ch)
+        self.msgpad.do_command(ch)
 
         self.msgpad_contents = self.msgpad.gather().strip()
 
@@ -214,7 +245,7 @@ class PromptWindow(BorderedWindow):
         ch = self.window.getch()
         self.key_handler(ch)
 
-    def any_key_prompt(self, prompt: str = "", color: int = curses.COLOR_WHITE) -> Union[str, None]:
+    def any_key_prompt(self, prompt: str = "", color: int = curses.COLOR_WHITE) -> Union[int, None]:
 
         curses.curs_set(1)
 
@@ -233,7 +264,7 @@ class PromptWindow(BorderedWindow):
 
     def key_handler(self, ch: int) -> int:
 
-        ch = super(PromptWindow, self).key_handler(ch)
+        ch = super(PromptSubWindow, self).key_handler(ch)
 
         if ch == 127:
             return curses.KEY_BACKSPACE
@@ -273,7 +304,7 @@ class _Textbox(Textbox):
             for x in range(self.maxx + 1):
                 if self.stripspaces and x > stop:
                     break
-                result = result + chr(curses.ascii.ascii(self.win.inch(y, x)))
+                result = result + chr(ascii.ascii(self.win.inch(y, x)))
             if self.maxy > 0:
                 result = result + "\n"
 

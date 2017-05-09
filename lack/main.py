@@ -6,7 +6,7 @@ from typing import Any
 
 import locale
 
-from .screen import LackScreen
+from .mainwindow import LackMainWindow
 
 if sys.version_info < (3, 6):
     print("lack require Python 3.6+")
@@ -29,12 +29,17 @@ signal.signal(signal.SIGINT, exit_handler)
 
 def main() -> None:
     def _main(window: Any) -> None:
-
         event_loop = asyncio.get_event_loop()
 
         rows, cols = window.getmaxyx()
 
-        LackScreen(rows, cols, 0, 0)
+        LackMainWindow(rows, cols, 0, 0)
+
+        # lackwin_width = (cols * 2) // 3
+        # lackwin_height = (rows * 2) // 3
+        # lackwin_x = (cols - lackwin_width) // 2
+        # lackwin_y = (rows - lackwin_height) // 2
+        # LackMainWindow(lackwin_height, lackwin_width, lackwin_y, lackwin_x)
 
         event_loop.run_forever()
 
