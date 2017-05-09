@@ -33,7 +33,7 @@ class LackManager:
         self.output_width = output_width
 
         if self._debug:
-            self.logger = logging.getLogger('debug')
+            self.logger = logging.getLogger()
             self.logger.addHandler(logging.FileHandler('/tmp/lack_debug.log'))
             self.logger.setLevel(logging.DEBUG)
 

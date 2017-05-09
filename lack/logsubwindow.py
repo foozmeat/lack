@@ -31,14 +31,6 @@ class LogSubWindow(BorderedSubWindow):
         self.scrollbar_x = self.width
         self.line_length = self.width - 1
 
-    async def demo_log(self):
-        await asyncio.sleep(0.5)
-
-        ts = str(datetime.now().timestamp())
-        self.datasource[ts] = (2, f'{ts} testing')
-
-        asyncio.ensure_future(self.demo_log())
-
     def key_handler(self, ch):
         if ch == curses.KEY_UP:
             self.log_up_down(UP)
