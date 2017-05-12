@@ -46,6 +46,8 @@ class Window(object):
 
         return ch
 
+    def reset(self):
+        self.window.erase()
 
 class PanelWindow(Window):
     def __init__(self, *args, **kwargs) -> None:
@@ -152,6 +154,8 @@ class SubWindow(object):
 
         return ch
 
+    def reset(self):
+        self.window.erase()
 
 class BorderedSubWindow(SubWindow):
     def __init__(self, *args, **kwargs) -> None:
@@ -175,6 +179,10 @@ class BorderedSubWindow(SubWindow):
     def hline(self, y:int, x:int, width:int) -> None:
         self.window.hline(y + 1, x + 1, curses.ACS_HLINE, width)
 
+    def reset(self):
+        self.window.erase()
+        self.window.box()
+
 class PromptSubWindow(BorderedSubWindow):
     def __init__(self, *args, **kwargs) -> None:
         super(PromptSubWindow, self).__init__(*args, **kwargs)
@@ -196,6 +204,7 @@ class PromptSubWindow(BorderedSubWindow):
         curses.curs_set(1)
 
         if not self.msgpad:
+            self.reset()
             self.window.move(0, 0)
 
             if prompt is not None:
