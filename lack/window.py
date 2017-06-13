@@ -291,6 +291,25 @@ class PromptSubWindow(BorderedSubWindow):
         pass
         # self.window.noutrefresh()
 
+    def progressbar(self, msg: str, prog_val=0.0) -> None:
+
+        text_len = len(msg)
+        outer_bar_len = self.width - text_len - 7
+        bar_len = outer_bar_len - 2
+
+        if prog_val > 1.0:
+            prog_val = 1.0
+
+        percent_text = "{:.0f}%".format(prog_val * 100)
+        bar_spaces = int(round(prog_val * bar_len, 0))
+        blank_spaces = bar_len - bar_spaces
+        prog_bar = "[" + ("#" * bar_spaces)
+        prog_bar += " " * blank_spaces
+        prog_bar += "] {}".format(percent_text)
+
+        self.set_text(0, 0, f'{msg} {prog_bar}')
+
+
 class _Textbox(Textbox):
     def __init__(self, win, insert_mode=False) -> None:
         super(_Textbox, self).__init__(win, insert_mode)
