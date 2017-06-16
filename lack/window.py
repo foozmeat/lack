@@ -270,6 +270,7 @@ class PromptSubWindow(BorderedSubWindow):
 
             y, x = self.window.getyx()
             self.window.move(y, x)
+            self.window.clrtoeol()
 
         ch = self.window.getch()
         if ch == -1:
