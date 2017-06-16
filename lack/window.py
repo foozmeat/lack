@@ -265,10 +265,11 @@ class PromptSubWindow(BorderedSubWindow):
 
         curses.curs_set(1)
 
-        self.set_text(0, 0, prompt, color=color)
+        if prompt != "":
+            self.set_text(0, 0, prompt, color=color)
 
-        y, x = self.window.getyx()
-        self.window.move(y, x)
+            y, x = self.window.getyx()
+            self.window.move(y, x)
 
         ch = self.window.getch()
         if ch == -1:
@@ -276,7 +277,7 @@ class PromptSubWindow(BorderedSubWindow):
 
         ch = self.key_handler(ch)
 
-        return ch
+        return chr(ch)
 
     def key_handler(self, ch: int) -> int:
 
