@@ -120,7 +120,8 @@ class SubWindow(object):
         self.window.addstr(y, x, text, *args)
 
         if clr:
-            self.window.clrtoeol()
+            cy, cx = self.window.getyx()
+            self.window.hline(cy, cx, ' ', self.width - cx)
 
         self.window.attroff(curses.color_pair(color))
 
@@ -266,11 +267,10 @@ class PromptSubWindow(BorderedSubWindow):
         curses.curs_set(1)
 
         if prompt != "":
-            self.set_text(0, 0, prompt, color=color)
+            self.set_text(0, 0, prompt, color=color, clr=True)
 
             y, x = self.window.getyx()
             self.window.move(y, x)
-            self.window.clrtoeol()
 
         ch = self.window.getch()
         if ch == -1:
@@ -295,6 +295,8 @@ class PromptSubWindow(BorderedSubWindow):
 
     def progressbar(self, msg: str, prog_val=0.0) -> None:
 
+        curses.curs_set(0)
+
         text_len = len(msg)
         outer_bar_len = self.width - text_len - 7
         bar_len = outer_bar_len - 2
@@ -307,9 +309,9 @@ class PromptSubWindow(BorderedSubWindow):
         blank_spaces = bar_len - bar_spaces
         prog_bar = "[" + ("#" * bar_spaces)
         prog_bar += " " * blank_spaces
-        prog_bar += "] {}".format(percent_text)
+        prog_bar += f"] {percent_text}"
 
-        self.set_text(0, 0, f'{msg} {prog_bar}')
+        self.set_text(0, 0, f'{msg} {prog_bar}', clr=True)
 
 
 class _Textbox(Textbox):
