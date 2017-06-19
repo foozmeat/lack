@@ -293,7 +293,7 @@ class PromptSubWindow(BorderedSubWindow):
         pass
         # self.window.noutrefresh()
 
-    def progressbar(self, msg: str, prog_val=0.0) -> None:
+    def progressbar(self, msg: str, prog_val=0.0, color: int = curses.COLOR_WHITE) -> None:
 
         curses.curs_set(0)
 
@@ -311,7 +311,7 @@ class PromptSubWindow(BorderedSubWindow):
         prog_bar += " " * blank_spaces
         prog_bar += f"] {percent_text}"
 
-        self.set_text(0, 0, f'{msg} {prog_bar}', clr=True)
+        self.set_text(0, 0, f'{msg} {prog_bar}', clr=True, color=color)
 
 
 class _Textbox(Textbox):
