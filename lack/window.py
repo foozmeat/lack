@@ -8,9 +8,11 @@ from typing import Callable, Optional, Any, Union
 Some ideas taken from https://github.com/konsulko/tizen-distro/blob/master/bitbake/lib/bb/ui/ncurses.py
 """
 
+
 def flush():
     panel.update_panels()
     curses.doupdate()
+
 
 class Window(object):
     def __init__(self, height: int, width: int, top: int, left: int, fg: int = curses.COLOR_WHITE) -> None:
@@ -49,6 +51,7 @@ class Window(object):
     def reset(self):
         self.window.erase()
 
+
 class PanelWindow(Window):
     def __init__(self, *args, **kwargs) -> None:
         super(PanelWindow, self).__init__(*args, **kwargs)
@@ -73,7 +76,6 @@ class PanelWindow(Window):
 
 
 class SubWindow(object):
-
     """
     Subwindows are curses sub-windows - they share memory with their parent window. Top/Left are relative to the
     top/left of the parent window.
@@ -104,7 +106,7 @@ class SubWindow(object):
         self.parent_key_handler: Optional[Callable[[int], int]] = None
         self.window.bkgdset(ord(' '), curses.color_pair(fg))
 
-    def hline(self, y:int, x:int, width:int) -> None:
+    def hline(self, y: int, x: int, width: int) -> None:
         self.window.hline(y, x, curses.ACS_HLINE, width)
 
     def set_text(self,
@@ -158,6 +160,7 @@ class SubWindow(object):
     def reset(self):
         self.window.erase()
 
+
 class BorderedSubWindow(SubWindow):
     def __init__(self, *args, **kwargs) -> None:
         super(BorderedSubWindow, self).__init__(*args, **kwargs)
@@ -177,12 +180,13 @@ class BorderedSubWindow(SubWindow):
                  *args: Any) -> None:
         super(BorderedSubWindow, self).set_text(y + 1, x + 1, text, color=color, clr=clr, *args)
 
-    def hline(self, y:int, x:int, width:int) -> None:
+    def hline(self, y: int, x: int, width: int) -> None:
         self.window.hline(y + 1, x + 1, curses.ACS_HLINE, width)
 
     def reset(self):
         self.window.erase()
         self.window.box()
+
 
 class PromptSubWindow(BorderedSubWindow):
     def __init__(self, *args, **kwargs) -> None:
@@ -310,6 +314,26 @@ class PromptSubWindow(BorderedSubWindow):
         prog_bar = "[" + ("#" * bar_spaces)
         prog_bar += " " * blank_spaces
         prog_bar += f"] {percent_text}"
+
+        self.set_text(0, 0, f'{msg} {prog_bar}', clr=True, color=color)
+
+    def countdownbar(self, msg: str, max_time: int = 20, time: int = 0, color: int = curses.COLOR_WHITE) -> None:
+
+        curses.curs_set(0)
+        time = int(time)
+
+        text_len = len(msg)
+        outer_bar_len = self.width - text_len - 7
+        bar_len = outer_bar_len - 2
+
+        step_size = bar_len / max_time
+
+        ftime = f"{time}s"
+        bar_spaces = int(round(time * step_size))
+        blank_spaces = bar_len - bar_spaces
+        prog_bar = "[" + ("#" * bar_spaces)
+        prog_bar += " " * blank_spaces
+        prog_bar += f"] {ftime}"
 
         self.set_text(0, 0, f'{msg} {prog_bar}', clr=True, color=color)
 
