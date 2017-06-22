@@ -268,7 +268,7 @@ class PromptSubWindow(BorderedSubWindow):
 
     def any_key_prompt(self, prompt: str = "", color: int = curses.COLOR_WHITE) -> Union[int, None]:
 
-        curses.curs_set(1)
+        # curses.curs_set(1)
 
         if prompt != "":
             self.set_text(0, 0, prompt, color=color, clr=True)
